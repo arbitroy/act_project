@@ -18,7 +18,7 @@ export default function Header() {
                 <div className="flex justify-between items-center py-6">
                     <div className="flex items-center">
                         <Link href="/dashboard" className="font-bold text-xl text-gray-800">
-                            Project Management
+                            ACT PRECAST
                         </Link>
                     </div>
                     <div>

@@ -17,12 +17,32 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-        const isValid = await verifyJWT(token, process.env.JWT_SECRET as string);
-        if (isValid) {
-            return NextResponse.next();
-        } else {
-            throw new Error('Invalid token');
+        const payload = await verifyAndDecodeJWT(token, process.env.JWT_SECRET as string);
+        
+        // Role-based routing
+        if (request.nextUrl.pathname.startsWith('/dashboard')) {
+            switch (payload.role) {
+                case 'Manager':
+                    if (!request.nextUrl.pathname.startsWith('/dashboard/manager')) {
+                        return NextResponse.redirect(new URL('/dashboard/manager', request.url));
+                    }
+                    break;
+                case 'PlannedEmployee':
+                    if (!request.nextUrl.pathname.startsWith('/dashboard/planned')) {
+                        return NextResponse.redirect(new URL('/dashboard/planned', request.url));
+                    }
+                    break;
+                case 'ActualEmployee':
+                    if (!request.nextUrl.pathname.startsWith('/dashboard/actual')) {
+                        return NextResponse.redirect(new URL('/dashboard/actual', request.url));
+                    }
+                    break;
+                default:
+                    return NextResponse.redirect(new URL('/login', request.url));
+            }
         }
+
+        return NextResponse.next();
     } catch (error) {
         console.error('Unauthorized route error:', error);
         return NextResponse.redirect(new URL('/login', request.url));
@@ -35,7 +55,7 @@ function base64UrlDecode(input: string) {
     return Uint8Array.from(atob(input + pad), c => c.charCodeAt(0));
 }
 
-async function verifyJWT(token: string, secret: string) {
+async function verifyAndDecodeJWT(token: string, secret: string) {
     const parts = token.split('.');
     if (parts.length !== 3) {
         throw new Error('Invalid token structure');
@@ -59,9 +79,14 @@ async function verifyJWT(token: string, secret: string) {
         encoder.encode(`${parts[0]}.${parts[1]}`)
     );
 
-    return valid;
-}
+    if (!valid) {
+        throw new Error('Invalid signature');
+    }
 
+    // Decode the payload
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+}
 
 export const config = {
     matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],

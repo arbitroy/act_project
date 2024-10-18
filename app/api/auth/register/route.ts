@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 import { queryWithRetry } from '../../db'
 
 export async function POST(request: Request) {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const userCheck =await queryWithRetry('SELECT * FROM Users WHERE Username = $1', [username])
+        const userCheck = await queryWithRetry('SELECT * FROM Users WHERE Username = $1', [username])
         if (userCheck.rows.length > 0) {
             return NextResponse.json({ success: false, message: 'Username already exists' }, { status: 409 })
         }
@@ -27,13 +28,28 @@ export async function POST(request: Request) {
             [username, hashedPassword, role]
         );
 
-
         const newUser = result.rows[0]
 
-        return NextResponse.json({
+        const token = jwt.sign(
+            { id: newUser.userid, username: newUser.username, role: newUser.role },
+            process.env.JWT_SECRET!,
+            { expiresIn: '1h' }
+        )
+
+        const response = NextResponse.json({
             success: true,
             user: { id: newUser.userid, username: newUser.username, role: newUser.role }
         }, { status: 201 })
+
+        response.cookies.set('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 3600,
+            path: '/',
+        })
+
+        return response
 
     } catch (error) {
         console.error('Detailed registration error:', error)

@@ -36,7 +36,9 @@ export default function Login() {
             })
             const data = await response.json()
             if (data.success) {
-                router.push('/dashboard')
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 100);
             } else {
                 setError(data.message || 'Login failed. Please try again.')
             }

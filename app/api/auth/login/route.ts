@@ -3,8 +3,6 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { queryWithRetry } from '../../db'
 
-
-
 export async function POST(request: Request) {
     const { username, password } = await request.json()
     if (!username || !password) {
@@ -30,7 +28,6 @@ export async function POST(request: Request) {
             process.env.JWT_SECRET!,
             { expiresIn: '1h' }
         )
-
 
         const response = NextResponse.json(
             { success: true, user: { id: user.userid, username: user.username, role: user.role } },

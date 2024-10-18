@@ -23,7 +23,11 @@ export default function Register() {
             })
             const data = await response.json()
             if (data.success) {
-                router.push('/login')
+                setTimeout(async () => {
+                    const { token } = await response.json();
+                    localStorage.setItem('token', token);
+                    router.push('/dashboard');
+                }, 100)
             } else {
                 setError(data.message || 'Registration failed. Please try again.')
             }

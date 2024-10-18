@@ -1,26 +1,37 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { queryWithRetry } from '../../db'
 
-export async function POST(request: Request) {
-    const { username, password } = await request.json()
-    if (!username || !password) {
-        return NextResponse.json({ success: false, message: 'Username and password are required' }, { status: 400 })
-    }
-
+export async function POST(request: NextRequest) {
     try {
+        const { username, password } = await request.json()
+
+        if (!username || !password) {
+            return NextResponse.json(
+                { success: false, message: 'Username and password are required' },
+                { status: 400 }
+            )
+        }
+
         const result = await queryWithRetry('SELECT * FROM Users WHERE Username = $1', [username])
 
         const user = result.rows[0]
 
         if (!user) {
-            return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 })
+            return NextResponse.json(
+                { success: false, message: 'User not found' },
+                { status: 404 }
+            )
         }
+
         const isValidPassword = await bcrypt.compare(password, user.password)
         
         if (!isValidPassword) {
-            return NextResponse.json({ success: false, message: 'Invalid password' }, { status: 401 })
+            return NextResponse.json(
+                { success: false, message: 'Invalid password' },
+                { status: 401 }
+            )
         }
 
         const token = jwt.sign(
@@ -30,7 +41,10 @@ export async function POST(request: Request) {
         )
 
         const response = NextResponse.json(
-            { success: true, user: { id: user.userid, username: user.username, role: user.role } },
+            {
+                success: true,
+                user: { id: user.userid, username: user.username, role: user.role }
+            },
             { status: 200 }
         )
 
@@ -43,15 +57,25 @@ export async function POST(request: Request) {
         })
 
         return response
-    } catch (error) {
-        console.error('Detailed login error:', error)
-        console.error('Error stack:', error.stack)
+    } catch (error: any) {
+        console.error('Login error:', error)
+
         if (error instanceof Error) {
             console.error('Error name:', error.name)
             console.error('Error message:', error.message)
+            console.error('Error stack:', error.stack)
         }
+
         if ('code' in error) console.error('Error code:', error.code)
         if ('detail' in error) console.error('Error detail:', error.detail)
-        return NextResponse.json({ success: false, message: 'An unexpected error occurred', error: error.message }, { status: 500 })
+
+        return NextResponse.json(
+            {
+                success: false,
+                message: 'An unexpected error occurred',
+                error: error.message
+            },
+            { status: 500 }
+        )
     }
 }

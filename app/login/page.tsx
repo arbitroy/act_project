@@ -36,7 +36,9 @@ export default function Login() {
             })
             const data = await response.json()
             if (data.success) {
-                setTimeout(() => {
+                setTimeout(async () => {
+                    const { token } = await response.json();
+                    localStorage.setItem('token', token);
                     router.push('/dashboard');
                 }, 100);
             } else {

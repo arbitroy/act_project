@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         })
 
         return response
-    } catch (error: any) {
+    } catch (error) {
         console.error('Login error:', error)
 
         if (error instanceof Error) {
@@ -66,8 +66,6 @@ export async function POST(request: NextRequest) {
             console.error('Error stack:', error.stack)
         }
 
-        if ('code' in error) console.error('Error code:', error.code)
-        if ('detail' in error) console.error('Error detail:', error.detail)
 
         return NextResponse.json(
             {

@@ -1,11 +1,6 @@
 import { authMiddleware } from '@/middleware/auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
+import { queryWithRetry } from '../db'
 
 // GET all daily reports
 export async function GET(request: NextRequest) {
@@ -14,7 +9,7 @@ export async function GET(request: NextRequest) {
         return authResponse
     }
     try {
-        const result = await pool.query('SELECT * FROM DailyReports')
+        const result = await queryWithRetry('SELECT * FROM DailyReports')
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching daily reports:', error)
@@ -30,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
     try {
         const { date, jobNo, tableNo, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks, createdBy } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'INSERT INTO DailyReports (Date, JobNo, TableNo, ElementID, AlreadyCasted, RemainingQuantity, PlannedToCast, PlannedVolume, MEP, Remarks, CreatedBy) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
             [date, jobNo, tableNo, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks, createdBy]
         )
@@ -49,7 +44,7 @@ export async function PUT(request: NextRequest) {
     }
     try {
         const { reportId, date, jobNo, tableNo, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'UPDATE DailyReports SET Date = $2, JobNo = $3, TableNo = $4, ElementID = $5, AlreadyCasted = $6, RemainingQuantity = $7, PlannedToCast = $8, PlannedVolume = $9, MEP = $10, Remarks = $11 WHERE ReportID = $1 RETURNING *',
             [reportId, date, jobNo, tableNo, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks]
         )
@@ -71,7 +66,7 @@ export async function DELETE(request: NextRequest) {
     }
     try {
         const { reportId } = await request.json()
-        const result = await pool.query('DELETE FROM DailyReports WHERE ReportID = $1 RETURNING *', [reportId])
+        const result = await queryWithRetry('DELETE FROM DailyReports WHERE ReportID = $1 RETURNING *', [reportId])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Daily report not found' }, { status: 404 })
         }

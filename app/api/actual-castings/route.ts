@@ -1,11 +1,8 @@
 import { authMiddleware } from '@/middleware/auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { queryWithRetry } from '../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
+
 
 // GET all actual castings
 export async function GET(request: NextRequest) {
@@ -14,7 +11,7 @@ export async function GET(request: NextRequest) {
         return authResponse
     }
     try {
-        const result = await pool.query('SELECT * FROM ActualCastings')
+        const result = await queryWithRetry('SELECT * FROM ActualCastings')
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching actual castings:', error)
@@ -30,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
     try {
         const { reportId, actualCasted, updatedBy } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'INSERT INTO ActualCastings (ReportID, ActualCasted, UpdatedBy) VALUES ($1, $2, $3) RETURNING *',
             [reportId, actualCasted, updatedBy]
         )
@@ -49,7 +46,7 @@ export async function PUT(request: NextRequest) {
     }
     try {
         const { castingId, actualCasted, updatedBy } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'UPDATE ActualCastings SET ActualCasted = $2, UpdatedBy = $3, UpdatedAt = CURRENT_TIMESTAMP WHERE CastingID = $1 RETURNING *',
             [castingId, actualCasted, updatedBy]
         )
@@ -71,7 +68,7 @@ export async function DELETE(request: NextRequest) {
     }
     try {
         const { castingId } = await request.json()
-        const result = await pool.query('DELETE FROM ActualCastings WHERE CastingID = $1 RETURNING *', [castingId])
+        const result = await queryWithRetry('DELETE FROM ActualCastings WHERE CastingID = $1 RETURNING *', [castingId])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Actual casting not found' }, { status: 404 })
         }

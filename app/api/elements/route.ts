@@ -1,11 +1,7 @@
 import { authMiddleware } from '@/middleware/auth'
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { queryWithRetry } from '../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
 
 // GET all elements
 export async function GET(request: NextRequest) {
@@ -14,7 +10,7 @@ export async function GET(request: NextRequest) {
         return authResponse
     }
     try {
-        const result = await pool.query('SELECT * FROM Elements')
+        const result = await queryWithRetry('SELECT * FROM Elements')
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching elements:', error)
@@ -30,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
     try {
         const { elementId, volume, weight } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'INSERT INTO Elements (ElementID, Volume, Weight) VALUES ($1, $2, $3) RETURNING *',
             [elementId, volume, weight]
         )
@@ -49,7 +45,7 @@ export async function PUT(request: NextRequest) {
     }
     try {
         const { elementId, volume, weight } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'UPDATE Elements SET Volume = $2, Weight = $3 WHERE ElementID = $1 RETURNING *',
             [elementId, volume, weight]
         )
@@ -71,7 +67,7 @@ export async function DELETE(request: NextRequest) {
     }
     try {
         const { elementId } = await request.json()
-        const result = await pool.query('DELETE FROM Elements WHERE ElementID = $1 RETURNING *', [elementId])
+        const result = await queryWithRetry('DELETE FROM Elements WHERE ElementID = $1 RETURNING *', [elementId])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Element not found' }, { status: 404 })
         }

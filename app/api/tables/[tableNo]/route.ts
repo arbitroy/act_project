@@ -1,11 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { Pool } from 'pg'
 import { authMiddleware } from '@/middleware/auth'
+import { queryWithRetry } from '../../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
 
 // GET table by TableNo
 export async function GET(request: NextRequest, { params }: { params: { tableNo: string } }) {
@@ -17,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { tableNo:
     const { tableNo } = params
 
     try {
-        const result = await pool.query('SELECT * FROM Tables WHERE TableNo = $1', [tableNo])
+        const result = await queryWithRetry('SELECT * FROM Tables WHERE TableNo = $1', [tableNo])
 
         if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Table not found' }, { status: 404 })

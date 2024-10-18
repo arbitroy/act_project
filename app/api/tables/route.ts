@@ -1,11 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { Pool } from 'pg'
 import { authMiddleware } from '@/middleware/auth'
+import { queryWithRetry } from '../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
+
 
 // GET all tables
 export async function GET(request: NextRequest) {
@@ -15,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const result = await pool.query('SELECT * FROM Tables')
+        const result = await queryWithRetry('SELECT * FROM Tables')
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching tables:', error)
@@ -32,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const { tableNo, description } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'INSERT INTO Tables (TableNo, Description) VALUES ($1, $2) RETURNING *',
             [tableNo, description]
         )
@@ -52,7 +49,7 @@ export async function PUT(request: NextRequest) {
 
     try {
         const { tableNo, description } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'UPDATE Tables SET Description = $2 WHERE TableNo = $1 RETURNING *',
             [tableNo, description]
         )
@@ -75,7 +72,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
         const { tableNo } = await request.json()
-        const result = await pool.query('DELETE FROM Tables WHERE TableNo = $1 RETURNING *', [tableNo])
+        const result = await queryWithRetry('DELETE FROM Tables WHERE TableNo = $1 RETURNING *', [tableNo])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Table not found' }, { status: 404 })
         }

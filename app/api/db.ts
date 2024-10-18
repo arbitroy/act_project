@@ -1,4 +1,4 @@
-import { Pool } from 'pg'
+import { Pool, QueryResult, QueryResultRow } from 'pg'
 import { setTimeout } from 'timers/promises'
 
 const MAX_RETRIES = 5
@@ -11,11 +11,17 @@ const pool = new Pool({
     }
 })
 
-async function executeWithRetry(operation: () => Promise<unknown>, retries = MAX_RETRIES, backoff = INITIAL_BACKOFF): Promise<any> {
+type OperationFunction<T> = () => Promise<T>
+
+async function executeWithRetry<T>(
+    operation: OperationFunction<T>, 
+    retries = MAX_RETRIES, 
+    backoff = INITIAL_BACKOFF
+): Promise<T> {
     try {
         return await operation()
     } catch (error) {
-        if (retries > 0 && error.code === 'ECONNRESET') {
+        if (retries > 0 && error instanceof Error && 'code' in error && error.code === 'ECONNRESET') {
             console.log(`Connection reset. Retrying in ${backoff}ms... (${retries} attempts left)`)
             await setTimeout(backoff)
             return executeWithRetry(operation, retries - 1, backoff * 2)
@@ -24,9 +30,8 @@ async function executeWithRetry(operation: () => Promise<unknown>, retries = MAX
     }
 }
 
-async function queryWithRetry(query: string, params: unknown[] = []): Promise<unknown> {
-    return executeWithRetry(() => pool.query(query, params))
+async function queryWithRetry<T extends QueryResultRow = any>(query: string, params: unknown[] = []): Promise<QueryResult<T>> {
+    return executeWithRetry(() => pool.query<T>(query, params))
 }
 
 export { queryWithRetry }
-

@@ -1,11 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { Pool } from 'pg'
 import { authMiddleware } from '@/middleware/auth'
+import { queryWithRetry } from '../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
+
 
 // GET all jobs
 export async function GET(request: NextRequest) {
@@ -15,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const result = await pool.query('SELECT * FROM Jobs')
+        const result = await queryWithRetry('SELECT * FROM Jobs')
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching jobs:', error)
@@ -32,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const { jobNo, description } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'INSERT INTO Jobs (JobNo, Description) VALUES ($1, $2) RETURNING *',
             [jobNo, description]
         )
@@ -52,7 +49,7 @@ export async function PUT(request: NextRequest) {
 
     try {
         const { jobNo, description } = await request.json()
-        const result = await pool.query(
+        const result = await queryWithRetry(
             'UPDATE Jobs SET Description = $2 WHERE JobNo = $1 RETURNING *',
             [jobNo, description]
         )
@@ -75,7 +72,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
         const { jobNo } = await request.json()
-        const result = await pool.query('DELETE FROM Jobs WHERE JobNo = $1 RETURNING *', [jobNo])
+        const result = await queryWithRetry('DELETE FROM Jobs WHERE JobNo = $1 RETURNING *', [jobNo])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 })
         }

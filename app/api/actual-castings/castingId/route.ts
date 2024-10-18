@@ -1,11 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { Pool } from 'pg'
 import { authMiddleware } from '@/middleware/auth'
+import { queryWithRetry } from '../../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
+
 
 // GET actual casting by CastingID
 export async function GET(request: NextRequest, { params }: { params: { castingId: string } }) {
@@ -17,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { castingI
     const { castingId } = params
 
     try {
-        const result = await pool.query('SELECT * FROM ActualCastings WHERE CastingID = $1', [castingId])
+        const result = await queryWithRetry('SELECT * FROM ActualCastings WHERE CastingID = $1', [castingId])
 
         if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Actual casting not found' }, { status: 404 })

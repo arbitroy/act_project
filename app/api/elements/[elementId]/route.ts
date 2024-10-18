@@ -1,11 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { Pool } from 'pg'
 import { authMiddleware } from '@/middleware/auth'
+import { queryWithRetry } from '../../db'
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-})
 
 // GET element by ElementID
 export async function GET(request: NextRequest, { params }: { params: { elementId: string } }) {
@@ -17,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { elementI
     const { elementId } = params
 
     try {
-        const result = await pool.query('SELECT * FROM Elements WHERE ElementID = $1', [elementId])
+        const result = await queryWithRetry('SELECT * FROM Elements WHERE ElementID = $1', [elementId])
 
         if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Element not found' }, { status: 404 })

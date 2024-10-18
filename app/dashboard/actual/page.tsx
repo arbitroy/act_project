@@ -20,8 +20,8 @@ export default function ActualEmployeeDashboard() {
 
         return (
             <Layout>
-                <div className="bg-white shadow-md rounded-lg p-6">
-                    <h2 className="text-3xl font-extrabold text-gray-900">Actual Employee Dashboard</h2>
+                <div className="bg-white shadow-md rounded-lg p-6 text-zinc-900">
+                    <h2 className="text-3xl font-extrabold">Actual Employee Dashboard</h2>
                     <p>Welcome, {user.username}!</p>
                     <ul className="list-disc space-y-2">
                         <li>Update actual production numbers</li>

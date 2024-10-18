@@ -20,7 +20,7 @@ export default function ManagerDashboard() {
 
         return (
             <Layout>
-                <div className="bg-white shadow-md rounded-lg p-6">
+                <div className="bg-white shadow-md rounded-lg p-6 text-zinc-900">
                     <h2 className="text-2xl font-bold mb-4">Manager Dashboard</h2>
                     <p className="mb-4">Welcome, {user.username}!</p>
                     <ul className="list-disc pl-5 space-y-2">

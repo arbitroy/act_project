@@ -23,9 +23,11 @@ export async function middleware(request: NextRequest) {
         if (request.nextUrl.pathname.startsWith('/dashboard')) {
             switch (payload.role) {
                 case 'Manager':
-                    if (!request.nextUrl.pathname.startsWith('/dashboard/manager')) {
+                    if (!request.nextUrl.pathname.startsWith('/dashboard/manager') &&
+                        !request.nextUrl.pathname.startsWith('/dashboard/master-data')) {
                         return NextResponse.redirect(new URL('/dashboard/manager', request.url));
                     }
+                    break;
                     break;
                 case 'PlannedEmployee':
                     if (!request.nextUrl.pathname.startsWith('/dashboard/planned')) {

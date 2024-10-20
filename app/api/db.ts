@@ -14,8 +14,8 @@ const pool = new Pool({
 type OperationFunction<T> = () => Promise<T>
 
 async function executeWithRetry<T>(
-    operation: OperationFunction<T>, 
-    retries = MAX_RETRIES, 
+    operation: OperationFunction<T>,
+    retries = MAX_RETRIES,
     backoff = INITIAL_BACKOFF
 ): Promise<T> {
     try {

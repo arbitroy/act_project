@@ -2,8 +2,6 @@ import { NextResponse, NextRequest } from 'next/server'
 import { authMiddleware } from '@/middleware/auth'
 import { queryWithRetry } from '../db'
 
-
-
 // GET all jobs
 export async function GET(request: NextRequest) {
     const authResponse = await authMiddleware(request)
@@ -26,12 +24,17 @@ export async function POST(request: NextRequest) {
     if (authResponse.status === 401) {
         return authResponse
     }
-
     try {
-        const { jobNo, description } = await request.json()
+        const { jobno, description } = await request.json()
+        
+        // Validate input
+        if (!jobno || jobno.trim() === '') {
+            return NextResponse.json({ error: 'Job number is required' }, { status: 400 })
+        }
+
         const result = await queryWithRetry(
             'INSERT INTO Jobs (JobNo, Description) VALUES ($1, $2) RETURNING *',
-            [jobNo, description]
+            [jobno, description]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {

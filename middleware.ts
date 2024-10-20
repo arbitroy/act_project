@@ -4,6 +4,11 @@ import type { NextRequest } from 'next/server';
 const encoder = new TextEncoder();
 
 export async function middleware(request: NextRequest) {
+    // Allow access to Express API routes
+    if (request.nextUrl.pathname.startsWith('/api')) {
+        return NextResponse.next();
+    }
+
     const token = request.cookies.get('token')?.value;
 
     if (request.nextUrl.pathname === '/' ||
@@ -27,7 +32,6 @@ export async function middleware(request: NextRequest) {
                         !request.nextUrl.pathname.startsWith('/dashboard/master-data')) {
                         return NextResponse.redirect(new URL('/dashboard/manager', request.url));
                     }
-                    break;
                     break;
                 case 'PlannedEmployee':
                     if (!request.nextUrl.pathname.startsWith('/dashboard/planned')) {
@@ -91,5 +95,5 @@ async function verifyAndDecodeJWT(token: string, secret: string) {
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

@@ -34,9 +34,14 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        const JWT_SECRET = process.env.JWT_SECRET
+        if (!JWT_SECRET) {
+            throw new Error('JWT_SECRET is not set')
+        }
+
         const token = jwt.sign(
             { id: user.userid, username: user.username, role: user.role },
-            process.env.JWT_SECRET!,
+            JWT_SECRET,
             { expiresIn: '1h' }
         )
 
@@ -50,7 +55,7 @@ export async function POST(request: NextRequest) {
 
         response.cookies.set('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: process.env.NODE_ENV !== 'development',
             sameSite: 'strict',
             maxAge: 3600,
             path: '/',
@@ -66,12 +71,11 @@ export async function POST(request: NextRequest) {
             console.error('Error stack:', error.stack)
         }
 
-
         return NextResponse.json(
             {
                 success: false,
                 message: 'An unexpected error occurred',
-                error: error.message
+                error: error instanceof Error ? error.message : String(error)
             },
             { status: 500 }
         )

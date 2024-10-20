@@ -1,75 +1,104 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-interface Table {
-    tableNo: string
-    description: string
+interface TableData {
+    tableno: string;  // Changed from tableNo to tableno
+    description: string;
 }
 
 export default function TablesManagement() {
-    const [tables, setTables] = useState<Table[]>([])
-    const [newTable, setNewTable] = useState<Table>({ tableNo: '', description: '' })
-    const [editingTable, setEditingTable] = useState<Table | null>(null)
+    const [tables, setTables] = useState<TableData[]>([])
+    const [newTable, setNewTable] = useState<TableData>({ tableno: '', description: '' })
+    const [editingTable, setEditingTable] = useState<TableData | null>(null)
     const token = localStorage.getItem('token');
+
+    const fetchTables = useCallback(async () => {
+        try {
+            const response = await fetch('/api/tables', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            if (response.ok) {
+                const data = await response.json()
+                console.log('Fetched tables:', data) // Add this line for debugging
+                setTables(data)
+            } else {
+                console.error('Failed to fetch tables:', response.statusText)
+            }
+        } catch (error) {
+            console.error('Error fetching tables:', error)
+        }
+    }, [token])
 
     useEffect(() => {
         fetchTables()
-    }, [])
-
-    const fetchTables = async () => {
-        const response = await fetch('/api/tables')
-        if (response.ok) {
-            const data = await response.json()
-            setTables(data)
-        }
-    }
+    }, [fetchTables])
 
     const handleCreate = async () => {
-        const response = await fetch('/api/tables', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(newTable),
-        })
-        if (response.ok) {
-            setNewTable({ tableNo: '', description: '' })
-            fetchTables()
+        try {
+            const response = await fetch('/api/tables', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(newTable),
+            })
+            if (response.ok) {
+                setNewTable({ tableno: '', description: '' })
+                fetchTables()
+            } else {
+                console.error('Failed to create table:', response.statusText)
+            }
+        } catch (error) {
+            console.error('Error creating table:', error)
         }
     }
 
     const handleUpdate = async () => {
         if (!editingTable) return
-        const response = await fetch('/api/tables', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(editingTable),
-        })
-        if (response.ok) {
-            setEditingTable(null)
-            fetchTables()
+        try {
+            const response = await fetch('/api/tables', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(editingTable),
+            })
+            if (response.ok) {
+                setEditingTable(null)
+                fetchTables()
+            } else {
+                console.error('Failed to update table:', response.statusText)
+            }
+        } catch (error) {
+            console.error('Error updating table:', error)
         }
     }
 
-    const handleDelete = async (tableNo: string) => {
-        const response = await fetch('/api/tables', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ tableNo }),
-        })
-        if (response.ok) {
-            fetchTables()
+    const handleDelete = async (tableno: string) => {
+        try {
+            const response = await fetch('/api/tables', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ tableno }),
+            })
+            if (response.ok) {
+                fetchTables()
+            } else {
+                console.error('Failed to delete table:', response.statusText)
+            }
+        } catch (error) {
+            console.error('Error deleting table:', error)
         }
     }
 
@@ -79,8 +108,8 @@ export default function TablesManagement() {
             <div className="flex gap-4 mb-4">
                 <Input
                     placeholder="Table No"
-                    value={newTable.tableNo}
-                    onChange={(e) => setNewTable({ ...newTable, tableNo: e.target.value })}
+                    value={newTable.tableno}
+                    onChange={(e) => setNewTable({ ...newTable, tableno: e.target.value })}
                 />
                 <Input
                     placeholder="Description"
@@ -98,11 +127,11 @@ export default function TablesManagement() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {tables.map((table) => (
-                        <TableRow key={table.tableNo}>
-                            <TableCell>{table.tableNo}</TableCell>
+                    {tables.map((table) => table && (
+                        <TableRow key={table.tableno}>
+                            <TableCell>{table.tableno}</TableCell>
                             <TableCell>
-                                {editingTable?.tableNo === table.tableNo ? (
+                                {editingTable?.tableno === table.tableno ? (
                                     <Input
                                         value={editingTable.description}
                                         onChange={(e) => setEditingTable({ ...editingTable, description: e.target.value })}
@@ -112,12 +141,12 @@ export default function TablesManagement() {
                                 )}
                             </TableCell>
                             <TableCell>
-                                {editingTable?.tableNo === table.tableNo ? (
+                                {editingTable?.tableno === table.tableno ? (
                                     <Button onClick={handleUpdate}>Save</Button>
                                 ) : (
                                     <Button onClick={() => setEditingTable(table)}>Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(table.tableNo)}>Delete</Button>
+                                <Button variant="destructive" onClick={() => handleDelete(table.tableno)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

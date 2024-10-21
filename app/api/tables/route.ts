@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     try {
         const { tableNo, description } = await request.json()
         const result = await queryWithRetry(
-            'INSERT INTO Tables (TableNo, Description) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO Tables (table_number, Description) VALUES ($1, $2) RETURNING *',
             [tableNo, description]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
     try {
         const { tableNo, description } = await request.json()
         const result = await queryWithRetry(
-            'UPDATE Tables SET Description = $2 WHERE TableNo = $1 RETURNING *',
+            'UPDATE Tables SET Description = $2 WHERE table_number = $1 RETURNING *',
             [tableNo, description]
         )
         if (result.rowCount === 0) {
@@ -72,7 +72,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
         const { tableNo } = await request.json()
-        const result = await queryWithRetry('DELETE FROM Tables WHERE TableNo = $1 RETURNING *', [tableNo])
+        const result = await queryWithRetry('DELETE FROM Tables WHERE table_number = $1 RETURNING *', [tableNo])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Table not found' }, { status: 404 })
         }

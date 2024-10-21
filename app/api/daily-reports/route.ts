@@ -8,12 +8,33 @@ export async function GET(request: NextRequest) {
     if (authResponse.status === 401) {
         return authResponse
     }
+    const page = parseInt(request.page as unknown as string) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
     try {
-        const result = await queryWithRetry('SELECT * FROM DailyReports')
-        return NextResponse.json(result.rows)
-    } catch (error) {
-        console.error('Error fetching daily reports:', error)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        const countResult = await queryWithRetry('SELECT COUNT(*) FROM DailyReports');
+        const totalReports = parseInt(countResult.rows[0].count);
+        const totalPages = Math.ceil(totalReports / limit);
+
+        const result = await queryWithRetry(`
+          SELECT dr.id, dr.date, j.job_number, t.table_number, e.element_id,
+                 dr.already_casted, dr.remaining_quantity, dr.planned_to_cast, dr.planned_volume
+          FROM DailyReports dr
+          JOIN Jobs j ON dr.job_id = j.id
+          JOIN Tables t ON dr.table_id = t.id
+          JOIN Elements e ON dr.element_id = e.id
+          ORDER BY dr.date DESC
+          LIMIT $1 OFFSET $2
+        `, [limit, offset]);
+
+        NextResponse.json({
+            reports: result.rows,
+            totalPages: totalPages,
+            currentPage: page
+        });
+    } catch (err) {
+        console.error(err);
+        NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
@@ -24,10 +45,10 @@ export async function POST(request: NextRequest) {
         return authResponse
     }
     try {
-        const { date, jobNo, tableNo, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks, createdBy } = await request.json()
+        const { date, userId, jobId, tableId, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks } = await request.json()
         const result = await queryWithRetry(
-            'INSERT INTO DailyReports (Date, JobNo, TableNo, ElementID, AlreadyCasted, RemainingQuantity, PlannedToCast, PlannedVolume, MEP, Remarks, CreatedBy) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-            [date, jobNo, tableNo, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks, createdBy]
+            'INSERT INTO DailyReports (date, user_id, job_id, table_id, element_id, already_casted, remaining_quantity, planned_to_cast, planned_volume, mep, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id',
+            [date, userId, jobId, tableId, elementId, alreadyCasted, remainingQuantity, plannedToCast, plannedVolume, mep, remarks]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {

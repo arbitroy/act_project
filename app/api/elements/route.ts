@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     try {
         const { elementId, volume, weight } = await request.json()
         const result = await queryWithRetry(
-            'INSERT INTO Elements (ElementID, Volume, Weight) VALUES ($1, $2, $3) RETURNING *',
+            'INSERT INTO Elements (element_id, Volume, Weight) VALUES ($1, $2, $3) RETURNING *',
             [elementId, volume, weight]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
     try {
         const { elementId, volume, weight } = await request.json()
         const result = await queryWithRetry(
-            'UPDATE Elements SET Volume = $2, Weight = $3 WHERE ElementID = $1 RETURNING *',
+            'UPDATE Elements SET Volume = $2, Weight = $3 WHERE element_id = $1 RETURNING *',
             [elementId, volume, weight]
         )
         if (result.rowCount === 0) {
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
     }
     try {
         const { elementId } = await request.json()
-        const result = await queryWithRetry('DELETE FROM Elements WHERE ElementID = $1 RETURNING *', [elementId])
+        const result = await queryWithRetry('DELETE FROM Elements WHERE Element_ID = $1 RETURNING *', [elementId])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Element not found' }, { status: 404 })
         }

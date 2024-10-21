@@ -11,7 +11,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 })
     }
 
-    if (!['Manager', 'PlannedEmployee', 'ActualEmployee'].includes(role)) {
+    if (!['manager', 'planned_employee', 'actual_employee'].includes(role)) {
         return NextResponse.json({ success: false, message: 'Invalid role' }, { status: 400 })
     }
 
@@ -24,21 +24,21 @@ export async function POST(request: Request) {
         const hashedPassword = await bcrypt.hash(password, 10)
 
         const result = await queryWithRetry(
-            'INSERT INTO Users (Username, Password, Role) VALUES ($1, $2, $3) RETURNING UserID, Username, Role',
+            'INSERT INTO Users (Username, password_hash, Role) VALUES ($1, $2, $3) RETURNING ID, Username, Role',
             [username, hashedPassword, role]
         );
 
         const newUser = result.rows[0]
 
         const token = jwt.sign(
-            { id: newUser.userid, username: newUser.username, role: newUser.role },
+            { id: newUser.id, username: newUser.username, role: newUser.role },
             process.env.JWT_SECRET!,
             { expiresIn: '1h' }
         )
 
         const response = NextResponse.json({
             success: true,
-            user: { id: newUser.userid, username: newUser.username, role: newUser.role }
+            user: { id: newUser.id, username: newUser.username, role: newUser.role }
         }, { status: 201 })
 
         response.cookies.set('token', token, {

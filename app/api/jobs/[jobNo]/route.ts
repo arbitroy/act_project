@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { jobNo: s
     const { jobNo } = params
 
     try {
-        const result = await queryWithRetry('SELECT * FROM Jobs WHERE JobNo = $1', [jobNo])
+        const result = await queryWithRetry('SELECT * FROM Jobs WHERE job_number = $1', [jobNo])
 
         if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 })

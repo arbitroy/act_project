@@ -95,9 +95,9 @@ export default function Register() {
                                 value={role}
                                 onChange={(e) => setRole(e.target.value)}
                             >
-                                <option value="PlannedEmployee">Planned Employee</option>
-                                <option value="ActualEmployee">Actual Employee</option>
-                                <option value="Manager">Manager</option>
+                                <option value="planned_employee">Planned Employee</option>
+                                <option value="actual_employee">Actual Employee</option>
+                                <option value="manager">Manager</option>
                             </select>
                         </div>
                     </div>

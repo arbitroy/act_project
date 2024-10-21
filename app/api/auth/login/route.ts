@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const isValidPassword = await bcrypt.compare(password, user.password)
+        const isValidPassword = await bcrypt.compare(password, user.password_hash)
         
         if (!isValidPassword) {
             return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         const token = jwt.sign(
-            { id: user.userid, username: user.username, role: user.role },
+            { id: user.id, username: user.username, role: user.role },
             JWT_SECRET,
             { expiresIn: '1h' }
         )
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         const response = NextResponse.json(
             {
                 success: true,
-                user: { id: user.userid, username: user.username, role: user.role }
+                user: { id: user.id, username: user.username, role: user.role }
             },
             { status: 200 }
         )

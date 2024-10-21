@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await queryWithRetry(
-            'INSERT INTO Jobs (JobNo, Description) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO Jobs (job_number, Description) VALUES ($1, $2) RETURNING *',
             [jobno, description]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
     try {
         const { jobNo, description } = await request.json()
         const result = await queryWithRetry(
-            'UPDATE Jobs SET Description = $2 WHERE JobNo = $1 RETURNING *',
+            'UPDATE Jobs SET Description = $2 WHERE job_number = $1 RETURNING *',
             [jobNo, description]
         )
         if (result.rowCount === 0) {
@@ -75,7 +75,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
         const { jobNo } = await request.json()
-        const result = await queryWithRetry('DELETE FROM Jobs WHERE JobNo = $1 RETURNING *', [jobNo])
+        const result = await queryWithRetry('DELETE FROM Jobs WHERE job_number = $1 RETURNING *', [jobNo])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 })
         }

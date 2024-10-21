@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { Button } from "@/components/ui/button"
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', role: 'all' },
@@ -18,7 +19,23 @@ export default function Sidebar() {
     }
 
     return (
-        <div className="bg-gray-800 text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">
+        <div className="bg-gray-800 text-white w-64 space-y-6 py-7 px-4 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">
+            <div className="flex items-center space-x-2 mb-6">
+                <Button variant="ghost" className="h-10 w-10 rounded-full">
+                    <svg
+                        className="h-6 w-6"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                </Button>
+                <h2 className="text-2xl font-bold">Act Precast</h2>
+            </div>
             <nav>
                 {navigation.map((item) => (
                     (item.role === 'all' || user?.role === item.role) && (

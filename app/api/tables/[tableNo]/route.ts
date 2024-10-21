@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { tableNo:
     const { tableNo } = params
 
     try {
-        const result = await queryWithRetry('SELECT * FROM Tables WHERE TableNo = $1', [tableNo])
+        const result = await queryWithRetry('SELECT * FROM Tables WHERE table_number = $1', [tableNo])
 
         if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Table not found' }, { status: 404 })

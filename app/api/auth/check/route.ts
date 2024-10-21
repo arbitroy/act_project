@@ -19,7 +19,7 @@ export async function GET() {
         const decoded = jwt.verify(token.value, process.env.JWT_SECRET) as { id: number, username: string, role: string }
 
         // Fetch the latest user data from the database
-        const result = await queryWithRetry('SELECT UserId, Username, Role FROM Users WHERE UserId = $1', [decoded.id])
+        const result = await queryWithRetry('SELECT Id, Username, Role FROM Users WHERE Id = $1', [decoded.id])
 
         if (result.rows.length === 0) {
             // User not found in the database
@@ -31,7 +31,7 @@ export async function GET() {
         return NextResponse.json({
             authenticated: true,
             user: {
-                id: user.userid,
+                id: user.id,
                 username: user.username,
                 role: user.role
             }

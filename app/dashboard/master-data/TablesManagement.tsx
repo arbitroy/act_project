@@ -112,7 +112,7 @@ export default function TablesManagement() {
                     value={newTable.description}
                     onChange={(e) => setNewTable({ ...newTable, description: e.target.value })}
                 />
-                <Button onClick={handleCreate}>Add Table</Button>
+                <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">Add Table</Button>
             </div>
             <Table>
                 <TableHeader>
@@ -138,11 +138,11 @@ export default function TablesManagement() {
                             </TableCell>
                             <TableCell>
                                 {editingTable && editingTable?.table_number === table.table_number ? (
-                                    <Button onClick={handleUpdate}>Save</Button>
+                                    <Button onClick={handleUpdate} className="bg-green-600 hover:bg-green-700 mr-2">Save</Button>
                                 ) : (
-                                    <Button onClick={() => setEditingTable(table)}>Edit</Button>
+                                    <Button onClick={() => setEditingTable(table)} className="bg-blue-600 hover:bg-blue-700 mr-2">Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(table.table_number)}>Delete</Button>
+                                <Button className="bg-red-600 hover:bg-red-700 mr-2" onClick={() => handleDelete(table.table_number)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

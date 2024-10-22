@@ -106,7 +106,7 @@ export default function ElementsManagement() {
                     value={newElement.weight}
                     onChange={(e) => setNewElement({ ...newElement, weight: e.target.value })}
                 />
-                <Button onClick={handleCreate}>Add Element</Button>
+                <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">Add Element</Button>
             </div>
             <Table>
                 <TableHeader>
@@ -145,11 +145,11 @@ export default function ElementsManagement() {
                             </TableCell>
                             <TableCell>
                                 {editingElement && editingElement?.element_id === element.element_id ? (
-                                    <Button onClick={handleUpdate}>Save</Button>
+                                    <Button onClick={handleUpdate} className="bg-green-600 hover:bg-green-700 mr-2">Save</Button>
                                 ) : (
-                                    <Button onClick={() => setEditingElement(element)}>Edit</Button>
+                                    <Button onClick={() => setEditingElement(element)} className="bg-blue-600 hover:bg-blue-700 mr-2">Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(element.element_id)}>Delete</Button>
+                                <Button className="bg-red-600 hover:bg-red-700 mr-2" onClick={() => handleDelete(element.element_id)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

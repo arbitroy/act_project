@@ -144,7 +144,7 @@ export default function JobsManagement() {
                                 ) : (
                                     <Button onClick={() => setEditingJob(job)} className="bg-blue-600 hover:bg-blue-700 mr-2">Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(job.job_number)}>Delete</Button>
+                                <Button className="bg-red-600 hover:bg-red-700 mr-2" onClick={() => handleDelete(job.job_number)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

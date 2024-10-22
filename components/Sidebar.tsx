@@ -8,6 +8,8 @@ const navigation = [
     { name: 'Dashboard', href: '/dashboard', role: 'all' },
     { name: 'Daily Reports', href: '/daily-reports', role: 'all' },
     { name: 'Master Data', href: '/dashboard/master-data', role: 'manager' },
+    { name: 'Planned to Cast', href: '/planned-castings', role: 'manager' },
+    { name: 'Actual castings', href: '/actual-castings', role: 'all' },
 ]
 
 export default function Sidebar() {

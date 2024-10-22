@@ -8,7 +8,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-green-50">
       <header className="bg-green-600 text-white shadow-md">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div className="text-2xl font-bold">ProjectCast</div>
+          <div className="text-2xl font-bold">ACT Precast</div>
           <nav>
             <ul className="flex space-x-4">
               <li><a href="#features" className="hover:text-green-200 transition-colors">Features</a></li>
@@ -77,11 +77,11 @@ export default function LandingPage() {
 
         <section id="about" className="py-20 bg-green-100">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-green-800 mb-8 text-center">About ProjectCast</h2>
+            <h2 className="text-3xl font-bold text-green-800 mb-8 text-center">About ACT Precast</h2>
             <p className="text-lg text-green-700 max-w-3xl mx-auto text-center">
-              ProjectCast is a comprehensive project management solution designed specifically for the casting industry. 
+              ACT Precast is a comprehensive project management solution designed specifically for the casting industry. 
               Our platform streamlines the entire casting process, from planning to execution, helping you increase 
-              efficiency and reduce errors. With ProjectCast, you can focus on what matters most - delivering high-quality 
+              efficiency and reduce errors. With ACT Precast, you can focus on what matters most - delivering high-quality 
               castings on time and within budget.
             </p>
           </div>
@@ -117,7 +117,7 @@ export default function LandingPage() {
 
       <footer className="bg-green-800 text-white py-8">
         <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2024 ProjectCast. All rights reserved.</p>
+          <p>&copy; 2024 ACT Precast. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -53,6 +53,6 @@ export async function POST(request: Request) {
 
     } catch (error) {
         console.error('Detailed registration error:', error)
-        return NextResponse.json({ success: false, message: 'An unexpected error occurred', error: error.message }, { status: 500 })
+        return NextResponse.json({ success: false, message: 'An unexpected error occurred', error: error instanceof Error ? error.message : String(error) }, { status: 500 })
     }
 }

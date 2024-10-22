@@ -50,8 +50,6 @@ export default function DailyReportInput() {
     const { user } = useAuth();
     const { control, handleSubmit, watch, setValue } = useForm<DailyReport>();
 
-    const selectedJobId = watch('job_id');
-    const selectedTableId = watch('table_id');
     const selectedElementId = watch('element_id');
     const plannedToCast = watch('planned_to_cast');
 

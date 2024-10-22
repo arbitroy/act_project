@@ -21,16 +21,21 @@ async function executeWithRetry<T>(
     try {
         return await operation()
     } catch (error) {
-        if (retries > 0 && error instanceof Error && 'code' in error && error.code === 'ECONNRESET') {
+        // Ensure error is properly typed
+        const err = error as NodeJS.ErrnoException;
+        if (retries > 0 && err?.code === 'ECONNRESET') {
             console.log(`Connection reset. Retrying in ${backoff}ms... (${retries} attempts left)`)
             await setTimeout(backoff)
             return executeWithRetry(operation, retries - 1, backoff * 2)
         }
-        throw error
+        throw err
     }
 }
 
-async function queryWithRetry<T extends QueryResultRow = any>(query: string, params: unknown[] = []): Promise<QueryResult<T>> {
+async function queryWithRetry<T extends QueryResultRow = QueryResultRow>(
+    query: string,
+    params: unknown[] = []
+): Promise<QueryResult<T>> {
     return executeWithRetry(() => pool.query<T>(query, params))
 }
 

@@ -21,7 +21,15 @@ interface DailyReport {
     planned_to_cast: number
     planned_volume: number
 }
+interface Job {
+    job_number: string;
+    description: string;
+}
 
+interface TableData {
+    table_number: string;
+    description: string;
+}
 interface FilterSelectProps {
     value: string
     onValueChange: (value: string) => void
@@ -104,24 +112,7 @@ export default function DailyReportListView() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
 
-    const fetchDailyReports = async () => {
-        setIsLoading(true)
-        setError('')
-        try {
-            const response = await fetch(`/api/daily-reports?page=${currentPage}&search=${searchTerm}&job=${filterJob}&table=${filterTable}`)
-            if (response.ok) {
-                const data = await response.json()
-                setDailyReports(data.reports)
-                setTotalPages(data.totalPages)
-            } else {
-                setError('Failed to fetch daily reports')
-            }
-        } catch (error) {
-            setError(`Error loading daily reports:${error} `)
-        } finally {
-            setIsLoading(false)
-        }
-    }
+    
 
     const fetchJobsAndTables = async () => {
         try {
@@ -132,15 +123,34 @@ export default function DailyReportListView() {
             if (jobsResponse.ok && tablesResponse.ok) {
                 const jobsData = await jobsResponse.json()
                 const tablesData = await tablesResponse.json()
-                setJobs(jobsData.map((job: any) => job.job_number))
-                setTables(tablesData.map((table: any) => table.table_number))
+                setJobs(jobsData.map((job: Job) => job.job_number))
+                setTables(tablesData.map((table: TableData) => table.table_number))
             }
         } catch (error) {
-            setError('Error loading filters')
+            setError(`Error loading filters : ${error}`)
         }
     }
 
     useEffect(() => {
+        const fetchDailyReports = async () => {
+            setIsLoading(true)
+            setError('')
+            try {
+                const response = await fetch(`/api/daily-reports?page=${currentPage}&search=${searchTerm}&job=${filterJob}&table=${filterTable}`)
+                if (response.ok) {
+                    const data = await response.json()
+                    setDailyReports(data.reports)
+                    setTotalPages(data.totalPages)
+                } else {
+                    setError('Failed to fetch daily reports')
+                }
+            } catch (error) {
+                setError(`Error loading daily reports:${error} `)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        
         fetchDailyReports()
         fetchJobsAndTables()
     }, [currentPage, searchTerm, filterJob, filterTable])
@@ -161,8 +171,8 @@ export default function DailyReportListView() {
                                 Manage and track your daily casting reports
                             </p>
                         </div>
-                        <Button 
-                            onClick={handleCreateReport} 
+                        <Button
+                            onClick={handleCreateReport}
                             className="bg-green-600 hover:bg-green-700 shadow-sm"
                         >
                             <Plus className="mr-2 h-4 w-4" /> Create Report

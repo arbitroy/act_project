@@ -25,7 +25,7 @@ export default function LandingPage() {
             <h1 className="text-5xl font-bold text-green-800 mb-4">Streamline Your Casting Projects</h1>
             <p className="text-xl text-green-600 mb-8">Efficient planning, tracking, and reporting for your casting operations</p>
             <div className="space-x-4">
-              <Link href="/signup">
+              <Link href="/register">
                 <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-lg">
                   Get Started
                 </Button>

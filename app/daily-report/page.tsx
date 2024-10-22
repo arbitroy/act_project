@@ -225,14 +225,12 @@ export default function DailyReportInput() {
                                     />
                                 </div>
 
-                                {/* Numeric input fields */}
-                                {['already_casted', 'remaining_quantity', 'planned_to_cast', 'planned_volume'].map((fieldName) => (
-                                    <div key={fieldName} className="space-y-2">
-                                        <Label htmlFor={fieldName} className="text-green-700">
-                                            {fieldName.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                        </Label>
+                                {/* Role-Based Fields */}
+                                {user?.role === 'planned_employee' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="planned_to_cast" className="text-green-700">Planned to Cast</Label>
                                         <Controller
-                                            name={fieldName as keyof DailyReport}
+                                            name="planned_to_cast"
                                             control={control}
                                             defaultValue={0}
                                             rules={{ required: true, min: 0 }}
@@ -241,12 +239,68 @@ export default function DailyReportInput() {
                                                     type="number"
                                                     {...field}
                                                     className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
-                                                    readOnly={fieldName === 'planned_volume'}
                                                 />
                                             )}
                                         />
                                     </div>
-                                ))}
+                                )}
+
+                                {user?.role === 'actual_employee' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="already_casted" className="text-green-700">Already Casted Today</Label>
+                                        <Controller
+                                            name="already_casted"
+                                            control={control}
+                                            defaultValue={0}
+                                            rules={{ required: true, min: 0 }}
+                                            render={({ field }) => (
+                                                <Input
+                                                    type="number"
+                                                    {...field}
+                                                    className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Manager Role: Reviews and Adjusts */}
+                                {user?.role === 'manager' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="remaining_quantity" className="text-green-700">Remaining Quantity</Label>
+                                        <Controller
+                                            name="remaining_quantity"
+                                            control={control}
+                                            defaultValue={0}
+                                            rules={{ required: true, min: 0 }}
+                                            render={({ field }) => (
+                                                <Input
+                                                    type="number"
+                                                    {...field}
+                                                    className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="planned_volume" className="text-green-700">Planned Volume (m³)</Label>
+                                    <Controller
+                                        name="planned_volume"
+                                        control={control}
+                                        defaultValue={0}
+                                        rules={{ required: true, min: 0 }}
+                                        render={({ field }) => (
+                                            <Input
+                                                type="number"
+                                                {...field}
+                                                disabled
+                                                className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
+                                            />
+                                        )}
+                                    />
+                                </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="mep" className="text-green-700">MEP</Label>
@@ -254,8 +308,27 @@ export default function DailyReportInput() {
                                         name="mep"
                                         control={control}
                                         defaultValue=""
+                                        rules={{ required: false }}
                                         render={({ field }) => (
                                             <Input
+                                                type="text"
+                                                {...field}
+                                                className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
+                                            />
+                                        )}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="remarks" className="text-green-700">Remarks</Label>
+                                    <Controller
+                                        name="remarks"
+                                        control={control}
+                                        defaultValue=""
+                                        rules={{ required: false }}
+                                        render={({ field }) => (
+                                            <Input
+                                                type="text"
                                                 {...field}
                                                 className="w-full border-green-300 focus:border-green-500 focus:ring-green-500"
                                             />
@@ -263,43 +336,15 @@ export default function DailyReportInput() {
                                     />
                                 </div>
                             </div>
-
-                            <div className="space-y-2 col-span-full">
-                                <Label htmlFor="remarks" className="text-green-700">Remarks</Label>
-                                <Controller
-                                    name="remarks"
-                                    control={control}
-                                    defaultValue=""
-                                    render={({ field }) => (
-                                        <textarea
-                                            {...field}
-                                            className="w-full p-2 border border-green-300 rounded-md focus:border-green-500 focus:ring-green-500"
-                                            rows={3}
-                                        />
-                                    )}
-                                />
-                            </div>
+                            <CardFooter className="pt-6">
+                                <Button type="submit" disabled={isLoading} className="w-full bg-green-600 hover:bg-green-700 text-white">
+                                    {isLoading ? <Loader2 className="animate-spin" /> : 'Submit Daily Report'}
+                                </Button>
+                            </CardFooter>
                         </form>
                     </CardContent>
-                    <CardFooter className="bg-green-50 border-t border-green-200">
-                        <Button
-                            type="submit"
-                            className="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500"
-                            onClick={handleSubmit(onSubmit)}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Submitting...
-                                </>
-                            ) : (
-                                'Submit Daily Report'
-                            )}
-                        </Button>
-                    </CardFooter>
                 </Card>
             </div>
         </Layout>
-    )
+    );
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', role: 'all' },
     { name: 'Daily Reports', href: '/daily-reports', role: 'all' },
-    { name: 'Master Data', href: '/dashboard/master-data', role: 'Manager' },
+    { name: 'Master Data', href: '/dashboard/master-data', role: 'manager' },
 ]
 
 export default function Sidebar() {

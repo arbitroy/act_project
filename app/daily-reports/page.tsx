@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Select } from "@/components/ui/select"
 import { Plus, Search } from 'lucide-react'
 
@@ -36,7 +36,7 @@ export default function DailyReportListView() {
 
     const fetchDailyReports = async () => {
         try {
-            const response = await fetch(`/express-api/daily-reports?page=${currentPage}&search=${searchTerm}&job=${filterJob}&table=${filterTable}`)
+            const response = await fetch(`/api/daily-reports?page=${currentPage}&search=${searchTerm}&job=${filterJob}&table=${filterTable}`)
             if (response.ok) {
                 const data = await response.json()
                 setDailyReports(data.reports)
@@ -52,8 +52,8 @@ export default function DailyReportListView() {
     const fetchJobsAndTables = async () => {
         try {
             const [jobsResponse, tablesResponse] = await Promise.all([
-                fetch('/express-api/jobs'),
-                fetch('/express-api/tables')
+                fetch('/api/jobs'),
+                fetch('/api/tables')
             ])
             if (jobsResponse.ok && tablesResponse.ok) {
                 const jobsData = await jobsResponse.json()

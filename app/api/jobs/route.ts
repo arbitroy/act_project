@@ -25,16 +25,16 @@ export async function POST(request: NextRequest) {
         return authResponse
     }
     try {
-        const { jobno, description } = await request.json()
+        const { job_number, description } = await request.json()
         
         // Validate input
-        if (!jobno || jobno.trim() === '') {
+        if (!job_number || job_number.trim() === '') {
             return NextResponse.json({ error: 'Job number is required' }, { status: 400 })
         }
 
         const result = await queryWithRetry(
             'INSERT INTO Jobs (job_number, Description) VALUES ($1, $2) RETURNING *',
-            [jobno, description]
+            [job_number, description]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {
@@ -51,10 +51,10 @@ export async function PUT(request: NextRequest) {
     }
 
     try {
-        const { jobNo, description } = await request.json()
+        const { job_number, description } = await request.json()
         const result = await queryWithRetry(
             'UPDATE Jobs SET Description = $2 WHERE job_number = $1 RETURNING *',
-            [jobNo, description]
+            [job_number, description]
         )
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 })
@@ -74,8 +74,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     try {
-        const { jobNo } = await request.json()
-        const result = await queryWithRetry('DELETE FROM Jobs WHERE job_number = $1 RETURNING *', [jobNo])
+        const { job_number } = await request.json()
+        const result = await queryWithRetry('DELETE FROM Jobs WHERE job_number = $1 RETURNING *', [job_number])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 })
         }

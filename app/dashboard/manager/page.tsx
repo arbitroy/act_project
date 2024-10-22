@@ -14,7 +14,7 @@ export default function ManagerDashboard() {
     try {
         const user = jwt.verify(token.value, process.env.JWT_SECRET as string) as { id: number, username: string, role: string }
 
-        if (user.role !== 'Manager') {
+        if (user.role !== 'manager') {
             redirect('/dashboard')
         }
 

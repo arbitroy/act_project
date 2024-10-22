@@ -3,17 +3,17 @@ import { authMiddleware } from '@/middleware/auth'
 import { queryWithRetry } from '../../db'
 
 
-// GET element by ElementID
-export async function GET(request: NextRequest, { params }: { params: { elementId: string } }) {
+// GET element by element_id
+export async function GET(request: NextRequest, { params }: { params: { element_id: string } }) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
     }
 
-    const { elementId } = params
+    const { element_id } = params
 
     try {
-        const result = await queryWithRetry('SELECT * FROM Elements WHERE element_id = $1', [elementId])
+        const result = await queryWithRetry('SELECT * FROM Elements WHERE element_id = $1', [element_id])
 
         if (result.rows.length === 0) {
             return NextResponse.json({ error: 'Element not found' }, { status: 404 })

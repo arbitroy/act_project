@@ -5,27 +5,25 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
+
+
 interface TableData {
-    tableno: string;  // Changed from tableNo to tableno
+    table_number: string;
     description: string;
 }
 
 export default function TablesManagement() {
     const [tables, setTables] = useState<TableData[]>([])
-    const [newTable, setNewTable] = useState<TableData>({ tableno: '', description: '' })
+    const [newTable, setNewTable] = useState<TableData>({ table_number: '', description: '' })
     const [editingTable, setEditingTable] = useState<TableData | null>(null)
-    const token = localStorage.getItem('token');
+
+
 
     const fetchTables = useCallback(async () => {
         try {
-            const response = await fetch('/api/tables', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
+            const response = await fetch('/api/tables')
             if (response.ok) {
                 const data = await response.json()
-                console.log('Fetched tables:', data) // Add this line for debugging
                 setTables(data)
             } else {
                 console.error('Failed to fetch tables:', response.statusText)
@@ -33,7 +31,7 @@ export default function TablesManagement() {
         } catch (error) {
             console.error('Error fetching tables:', error)
         }
-    }, [token])
+    }, [])
 
     useEffect(() => {
         fetchTables()
@@ -45,12 +43,11 @@ export default function TablesManagement() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(newTable),
             })
             if (response.ok) {
-                setNewTable({ tableno: '', description: '' })
+                setNewTable({ table_number: '', description: '' })
                 fetchTables()
             } else {
                 console.error('Failed to create table:', response.statusText)
@@ -67,7 +64,6 @@ export default function TablesManagement() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(editingTable),
             })
@@ -82,15 +78,14 @@ export default function TablesManagement() {
         }
     }
 
-    const handleDelete = async (tableno: string) => {
+    const handleDelete = async (table_number: string) => {
         try {
             const response = await fetch('/api/tables', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ tableno }),
+                body: JSON.stringify({ table_number }),
             })
             if (response.ok) {
                 fetchTables()
@@ -102,14 +97,15 @@ export default function TablesManagement() {
         }
     }
 
+
     return (
         <div>
             <h3 className="text-lg font-semibold mb-4">Tables Management</h3>
             <div className="flex gap-4 mb-4">
                 <Input
                     placeholder="Table No"
-                    value={newTable.tableno}
-                    onChange={(e) => setNewTable({ ...newTable, tableno: e.target.value })}
+                    value={newTable.table_number}
+                    onChange={(e) => setNewTable({ ...newTable, table_number: e.target.value })}
                 />
                 <Input
                     placeholder="Description"
@@ -128,10 +124,10 @@ export default function TablesManagement() {
                 </TableHeader>
                 <TableBody>
                     {tables.map((table) => table && (
-                        <TableRow key={table.tableno}>
-                            <TableCell>{table.tableno}</TableCell>
+                        <TableRow key={table.table_number}>
+                            <TableCell>{table.table_number}</TableCell>
                             <TableCell>
-                                {editingTable?.tableno === table.tableno ? (
+                                {editingTable && editingTable?.table_number === table.table_number ? (
                                     <Input
                                         value={editingTable.description}
                                         onChange={(e) => setEditingTable({ ...editingTable, description: e.target.value })}
@@ -141,12 +137,12 @@ export default function TablesManagement() {
                                 )}
                             </TableCell>
                             <TableCell>
-                                {editingTable?.tableno === table.tableno ? (
+                                {editingTable && editingTable?.table_number === table.table_number ? (
                                     <Button onClick={handleUpdate}>Save</Button>
                                 ) : (
                                     <Button onClick={() => setEditingTable(table)}>Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(table.tableno)}>Delete</Button>
+                                <Button variant="destructive" onClick={() => handleDelete(table.table_number)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

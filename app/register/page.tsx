@@ -7,7 +7,7 @@ import Link from 'next/link'
 export default function Register() {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [role, setRole] = useState('PlannedEmployee')
+    const [role, setRole] = useState('planned_employee')
     const [error, setError] = useState('')
     const router = useRouter()
 
@@ -23,11 +23,7 @@ export default function Register() {
             })
             const data = await response.json()
             if (data.success) {
-                setTimeout(async () => {
-                    const { token } = data;
-                    localStorage.setItem('token', token);
-                    router.push('/dashboard');
-                }, 100)
+                router.push('/dashboard');
             } else {
                 setError(data.message || 'Registration failed. Please try again.')
             }

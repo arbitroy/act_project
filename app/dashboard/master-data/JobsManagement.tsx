@@ -6,33 +6,30 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface Job {
-    jobno: string;  // Changed from jobNo to jobno
+    job_number: string;
     description: string;
 }
 
 export default function JobsManagement() {
     const [jobs, setJobs] = useState<Job[]>([])
-    const [newJob, setNewJob] = useState<Job>({ jobno: '', description: '' })
+    const [newJob, setNewJob] = useState<Job>({ job_number: '', description: '' })
     const [editingJob, setEditingJob] = useState<Job | null>(null)
-    const token = localStorage.getItem('token');
 
     const fetchJobs = useCallback(async () => {
         try {
-            const response = await fetch('/api/jobs', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
+            const response = await fetch('/api/jobs')
             if (response.ok) {
                 const data = await response.json()
                 setJobs(data)
             } else {
                 console.error('Failed to fetch jobs:', response.statusText)
+                
             }
         } catch (error) {
             console.error('Error fetching jobs:', error)
+            
         }
-    }, [token])
+    }, [])
 
     useEffect(() => {
         fetchJobs()
@@ -44,29 +41,30 @@ export default function JobsManagement() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(newJob),
             })
             if (response.ok) {
-                setNewJob({ jobno: '', description: '' })
+                setNewJob({ job_number: '', description: '' })
                 fetchJobs()
+                
             } else {
                 console.error('Failed to create job:', response.statusText)
+                
             }
         } catch (error) {
             console.error('Error creating job:', error)
+            
         }
     }
 
     const handleUpdate = async () => {
         if (!editingJob) return
         try {
-            const response = await fetch('/api/jobs', {
+            const response = await fetch(`/api/jobs/${editingJob.job_number}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(editingJob),
             })
@@ -75,47 +73,48 @@ export default function JobsManagement() {
                 fetchJobs()
             } else {
                 console.error('Failed to update job:', response.statusText)
+                
             }
         } catch (error) {
             console.error('Error updating job:', error)
+            
         }
     }
 
-    const handleDelete = async (jobno: string) => {
+    const handleDelete = async (job_number: string) => {
         try {
-            const response = await fetch('/api/jobs', {
+            const response = await fetch(`/api/jobs/${job_number}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ jobno }),
             })
             if (response.ok) {
                 fetchJobs()
             } else {
                 console.error('Failed to delete job:', response.statusText)
+                
             }
         } catch (error) {
             console.error('Error deleting job:', error)
+            
         }
     }
 
     return (
-        <div>
-            <h3 className="text-lg font-semibold mb-4">Jobs Management</h3>
-            <div className="flex gap-4 mb-4">
+        <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Jobs Management</h3>
+            <div className="flex gap-4">
                 <Input
                     placeholder="Job No"
-                    value={newJob.jobno}
-                    onChange={(e) => setNewJob({ ...newJob, jobno: e.target.value })}
+                    value={newJob.job_number}
+                    onChange={(e) => setNewJob({ ...newJob, job_number: e.target.value })}
+                    className="flex-1"
                 />
                 <Input
                     placeholder="Description"
                     value={newJob.description}
                     onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+                    className="flex-1"
                 />
-                <Button onClick={handleCreate}>Add Job</Button>
+                <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">Add Job</Button>
             </div>
             <Table>
                 <TableHeader>
@@ -126,11 +125,11 @@ export default function JobsManagement() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {jobs.map((job) => job && (
-                        <TableRow key={job.jobno}>
-                            <TableCell>{job.jobno}</TableCell>
+                    {jobs.map((job) => (
+                        <TableRow key={job.job_number}>
+                            <TableCell>{job.job_number}</TableCell>
                             <TableCell>
-                                {editingJob?.jobno === job.jobno ? (
+                                {editingJob && editingJob.job_number === job.job_number ? (
                                     <Input
                                         value={editingJob.description}
                                         onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })}
@@ -140,12 +139,12 @@ export default function JobsManagement() {
                                 )}
                             </TableCell>
                             <TableCell>
-                                {editingJob?.jobno === job.jobno ? (
-                                    <Button onClick={handleUpdate}>Save</Button>
+                                {editingJob && editingJob.job_number === job.job_number ? (
+                                    <Button onClick={handleUpdate} className="bg-green-600 hover:bg-green-700 mr-2">Save</Button>
                                 ) : (
-                                    <Button onClick={() => setEditingJob(job)}>Edit</Button>
+                                    <Button onClick={() => setEditingJob(job)} className="bg-blue-600 hover:bg-blue-700 mr-2">Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(job.jobno)}>Delete</Button>
+                                <Button variant="destructive" onClick={() => handleDelete(job.job_number)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

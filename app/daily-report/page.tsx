@@ -71,7 +71,7 @@ export default function DailyReportInput() {
     }, [selectedElementId, plannedToCast, elements, setValue]);
 
     const fetchJobs = async () => {
-        const response = await fetch('/express-api/jobs');
+        const response = await fetch('/api/jobs');
         if (response.ok) {
             const data = await response.json();
             setJobs(data);
@@ -79,7 +79,7 @@ export default function DailyReportInput() {
     }
 
     const fetchTables = async () => {
-        const response = await fetch('/express-api/tables');
+        const response = await fetch('/api/tables');
         if (response.ok) {
             const data = await response.json();
             setTables(data);
@@ -87,7 +87,7 @@ export default function DailyReportInput() {
     }
 
     const fetchElements = async () => {
-        const response = await fetch('/express-api/elements');
+        const response = await fetch('/api/elements');
         if (response.ok) {
             const data = await response.json();
             setElements(data);
@@ -97,7 +97,7 @@ export default function DailyReportInput() {
     const onSubmit = async (data: DailyReport) => {
         setIsLoading(true);
         try {
-            const response = await fetch('/express-api/daily-reports', {
+            const response = await fetch('/api/daily-reports', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

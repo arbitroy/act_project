@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
+
 interface Element {
-    elementid: string;  // Changed from elementId to elementid
+    element_id: string;  // Changed from element_id to element_id
     volume: string;     // Changed from number to string
     weight: string;     // Changed from number to string
 }
 
 export default function ElementsManagement() {
     const [elements, setElements] = useState<Element[]>([])
-    const [newElement, setNewElement] = useState<Element>({ elementid: '', volume: '0', weight: '0' })
+    const [newElement, setNewElement] = useState<Element>({ element_id: '', volume: '0', weight: '0' })
     const [editingElement, setEditingElement] = useState<Element | null>(null)
-    const token = localStorage.getItem('token')
 
 
     const fetchElements = useCallback(async () => {
@@ -24,12 +24,10 @@ export default function ElementsManagement() {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+                },
             })
             if (response.ok) {
                 const data = await response.json()
-                console.log('Fetched elements:', data) // Add this line for debugging
                 setElements(data)
             } else {
                 console.error('Failed to fetch elements:', response.statusText)
@@ -37,7 +35,7 @@ export default function ElementsManagement() {
         } catch (error) {
             console.error('Error fetching elements:', error)
         }
-    }, [token])
+    }, [])
 
     useEffect(() => {
         fetchElements()
@@ -50,12 +48,11 @@ export default function ElementsManagement() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(newElement),
         })
         if (response.ok) {
-            setNewElement({ elementid: '', volume: '0', weight: '0' })
+            setNewElement({ element_id: '', volume: '0', weight: '0' })
             fetchElements()
         }
     }
@@ -66,7 +63,6 @@ export default function ElementsManagement() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(editingElement),
         })
@@ -76,14 +72,13 @@ export default function ElementsManagement() {
         }
     }
 
-    const handleDelete = async (elementid: string) => {
+    const handleDelete = async (element_id: string) => {
         const response = await fetch('/api/elements', {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ elementid }),
+            body: JSON.stringify({ element_id }),
         })
         if (response.ok) {
             fetchElements()
@@ -96,8 +91,8 @@ export default function ElementsManagement() {
                 <Input
                     type="number"
                     placeholder="Element ID"
-                    value={newElement.elementid}
-                    onChange={(e) => setNewElement({ ...newElement, elementid: e.target.value })}
+                    value={newElement.element_id}
+                    onChange={(e) => setNewElement({ ...newElement, element_id: e.target.value })}
                 />
                 <Input
                     type="number"
@@ -124,10 +119,10 @@ export default function ElementsManagement() {
                 </TableHeader>
                 <TableBody>
                     {elements.map((element) => (
-                        <TableRow key={element.elementid}>
-                            <TableCell>{element.elementid}</TableCell>
+                        <TableRow key={element.element_id}>
+                            <TableCell>{element.element_id}</TableCell>
                             <TableCell>
-                                {editingElement?.elementid === element.elementid ? (
+                                {editingElement && editingElement?.element_id === element.element_id ? (
                                     <Input
                                         type="number"
                                         value={editingElement.volume}
@@ -138,7 +133,7 @@ export default function ElementsManagement() {
                                 )}
                             </TableCell>
                             <TableCell>
-                                {editingElement?.elementid === element.elementid ? (
+                                {editingElement && editingElement?.element_id === element.element_id ? (
                                     <Input
                                         type="number"
                                         value={editingElement.weight}
@@ -149,12 +144,12 @@ export default function ElementsManagement() {
                                 )}
                             </TableCell>
                             <TableCell>
-                                {editingElement?.elementid === element.elementid ? (
+                                {editingElement && editingElement?.element_id === element.element_id ? (
                                     <Button onClick={handleUpdate}>Save</Button>
                                 ) : (
                                     <Button onClick={() => setEditingElement(element)}>Edit</Button>
                                 )}
-                                <Button variant="destructive" onClick={() => handleDelete(element.elementid)}>Delete</Button>
+                                <Button variant="destructive" onClick={() => handleDelete(element.element_id)}>Delete</Button>
                             </TableCell>
                         </TableRow>
                     ))}

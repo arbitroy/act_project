@@ -14,7 +14,7 @@ export default function PlannedEmployeeDashboard() {
     try {
         const user = jwt.verify(token.value, process.env.JWT_SECRET as string) as { id: number, username: string, role: string }
 
-        if (user.role !== 'PlannedEmployee') {
+        if (user.role !== 'planned_employee') {
             redirect('/dashboard')
         }
 

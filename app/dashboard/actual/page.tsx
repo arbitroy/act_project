@@ -1,9 +1,9 @@
-import { cookies } from 'next/headers'
-import jwt from 'jsonwebtoken'
-import { redirect } from 'next/navigation'
 import Layout from '@/components/Layout'
+import jwt from 'jsonwebtoken'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-export default function ActualEmployeeDashboard() {
+export default function EmployeeDashboard() {
     const cookieStore = cookies()
     const token = cookieStore.get('token')
 
@@ -14,7 +14,7 @@ export default function ActualEmployeeDashboard() {
     try {
         const user = jwt.verify(token.value, process.env.JWT_SECRET as string) as { id: number, username: string, role: string }
 
-        if (user.role !== 'ActualEmployee') {
+        if (user.role !== 'actual_employee') {
             redirect('/dashboard')
         }
 

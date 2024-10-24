@@ -44,11 +44,20 @@ interface Element {
 // Define a schema for form validation
 const dailyReportSchema = z.object({
     date: z.string().min(1, 'Date is required'),
-    job_id: z.number().int().positive('Job is required'),
-    table_id: z.number().int().positive('Table is required'),
-    element_id: z.number().int().positive('Element is required'),
-    planned_volume: z.number().nonnegative(),
-    planned_weight: z.number().nonnegative(),
+    job_id: z.union([
+        z.number(),
+        z.string().transform((val) => parseInt(val, 10))
+    ]).refine((val) => !isNaN(val) && val > 0, 'Job is required'),
+    table_id: z.union([
+        z.number(),
+        z.string().transform((val) => parseInt(val, 10))
+    ]).refine((val) => !isNaN(val) && val > 0, 'Table is required'),
+    element_id: z.union([
+        z.number(),
+        z.string().transform((val) => parseInt(val, 10))
+    ]).refine((val) => !isNaN(val) && val > 0, 'Element is required'),
+    planned_volume: z.number().nonnegative().optional(),
+    planned_weight: z.number().nonnegative().optional(),
     mep: z.string().optional(),
     remarks: z.string().optional()
 })
@@ -56,11 +65,7 @@ const dailyReportSchema = z.object({
 // Define type for form data based on the schema
 type DailyReportFormData = z.infer<typeof dailyReportSchema>
 
-// Type for API response
-interface ApiResponse<T> {
-    data?: T
-    error?: string
-}
+
 
 export default function DailyReportInput(): JSX.Element {
     const [jobs, setJobs] = useState<readonly Job[]>([])
@@ -71,14 +76,13 @@ export default function DailyReportInput(): JSX.Element {
     const { user } = useAuth()
     const router = useRouter()
 
-    const { control, handleSubmit, watch, setValue, formState: { errors, isValid } } = useForm<DailyReportFormData>({
+    const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<DailyReportFormData>({
         resolver: zodResolver(dailyReportSchema),
         defaultValues: {
             date: new Date().toISOString().split('T')[0],
             planned_volume: 0,
             planned_weight: 0
-        },
-        mode: 'onChange'
+        }
     })
 
     const selectedElementId = watch('element_id')
@@ -88,8 +92,8 @@ export default function DailyReportInput(): JSX.Element {
             try {
                 const response = await fetch('/api/tables')
                 if (!response.ok) throw new Error('Failed to fetch tables')
-                const data: ApiResponse<Table[]> = await response.json()
-                if (data.data) setTables(data.data)
+                const tables: Table[] = await response.json()
+                setTables(tables)
             } catch (error) {
                 console.error('Error fetching tables:', error)
                 toast({
@@ -103,6 +107,7 @@ export default function DailyReportInput(): JSX.Element {
         void fetchJobs()
         void fetchTables()
         void fetchElements()
+
     }, [setTables])
 
     useEffect(() => {
@@ -119,9 +124,8 @@ export default function DailyReportInput(): JSX.Element {
         try {
             const response = await fetch('/api/jobs')
             if (!response.ok) throw new Error('Failed to fetch jobs')
-            const data: ApiResponse<Job[]> = await response.json()
-            if (data.data) setJobs(data.data)
-            
+            const jobs: Job[] = await response.json()
+            setJobs(jobs)
         } catch (error) {
             console.error('Error fetching jobs:', error)
             toast({
@@ -138,8 +142,8 @@ export default function DailyReportInput(): JSX.Element {
         try {
             const response = await fetch('/api/elements')
             if (!response.ok) throw new Error('Failed to fetch elements')
-            const data: ApiResponse<Element[]> = await response.json()
-            if (data.data) setElements(data.data)
+            const elements: Element[] = await response.json()
+            setElements(elements)
         } catch (error) {
             console.error('Error fetching elements:', error)
             toast({
@@ -225,7 +229,7 @@ export default function DailyReportInput(): JSX.Element {
 
                     <CardContent className="p-6">
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            <Tabs defaultValue="basic" className="w-full" onValueChange={setActiveTab}>
+                            <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
                                 <TabsList className="grid w-full grid-cols-2 bg-emerald-50">
                                     <TabsTrigger
                                         value="basic"
@@ -283,7 +287,7 @@ export default function DailyReportInput(): JSX.Element {
                                                     <div className="space-y-1">
                                                         <Select
                                                             onValueChange={(value) => field.onChange(Number(value))}
-                                                            defaultValue={field.value?.toString()}
+                                                            value={field.value?.toString()}
                                                         >
                                                             <SelectTrigger
                                                                 id="job_id"
@@ -325,7 +329,7 @@ export default function DailyReportInput(): JSX.Element {
                                                     <div className="space-y-1">
                                                         <Select
                                                             onValueChange={(value) => field.onChange(Number(value))}
-                                                            defaultValue={field.value?.toString()}
+                                                            value={field.value?.toString()}
                                                         >
                                                             <SelectTrigger
                                                                 id="table_id"
@@ -367,7 +371,7 @@ export default function DailyReportInput(): JSX.Element {
                                                     <div className="space-y-1">
                                                         <Select
                                                             onValueChange={(value) => field.onChange(Number(value))}
-                                                            defaultValue={field.value?.toString()}
+                                                            value={field.value?.toString()}
                                                         >
                                                             <SelectTrigger
                                                                 id="element_id"
@@ -440,7 +444,10 @@ export default function DailyReportInput(): JSX.Element {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => setActiveTab(activeTab === 'basic' ? 'details' : 'basic')}
+                                    onClick={() => {
+                                        const newTab = activeTab === 'basic' ? 'details' : 'basic'
+                                        setActiveTab(newTab)
+                                    }}
                                     className="border-emerald-200 hover:bg-emerald-50 text-emerald-700"
                                 >
                                     {activeTab === 'basic' ? 'Next: Details' : 'Back to Basic Info'}
@@ -448,7 +455,7 @@ export default function DailyReportInput(): JSX.Element {
 
                                 <Button
                                     type="submit"
-                                    disabled={isLoading || !isValid}
+                                    disabled={isLoading}
                                     className="min-w-[200px] bg-emerald-600 hover:bg-emerald-700 text-white"
                                 >
                                     {isLoading ? (

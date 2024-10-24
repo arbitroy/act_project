@@ -121,7 +121,7 @@ export default function DailyReportInput(): JSX.Element {
             if (!response.ok) throw new Error('Failed to fetch jobs')
             const data: ApiResponse<Job[]> = await response.json()
             if (data.data) setJobs(data.data)
-            cl
+            
         } catch (error) {
             console.error('Error fetching jobs:', error)
             toast({

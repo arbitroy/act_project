@@ -24,13 +24,14 @@ export async function middleware(request: NextRequest) {
     try {
         const payload = await verifyAndDecodeJWT(token, process.env.JWT_SECRET as string);
 
-        
+
         // Role-based routing
         if (request.nextUrl.pathname.startsWith('/dashboard')) {
             switch (payload.role) {
                 case 'manager':
                     if (!request.nextUrl.pathname.startsWith('/dashboard/manager') &&
-                        !request.nextUrl.pathname.startsWith('/dashboard/master-data')) {
+                        !request.nextUrl.pathname.startsWith('/dashboard/master-data') &&
+                        !request.nextUrl.pathname.startsWith('/dashboard/planning')) {
                         return NextResponse.redirect(new URL('/dashboard/manager', request.url));
                     }
                     break;

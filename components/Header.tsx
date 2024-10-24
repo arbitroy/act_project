@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogOut, User } from 'lucide-react'
+import { LogOut} from 'lucide-react'
 
 export default function Header() {
     const router = useRouter()
@@ -58,10 +58,6 @@ export default function Header() {
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
-                                        <User className="mr-2 h-4 w-4" />
-                                        <span>Profile</span>
-                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={handleLogout}>
                                         <LogOut className="mr-2 h-4 w-4" />
                                         <span>Log out</span>

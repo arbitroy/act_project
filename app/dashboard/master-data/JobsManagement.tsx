@@ -23,11 +23,11 @@ export default function JobsManagement() {
                 setJobs(data)
             } else {
                 console.error('Failed to fetch jobs:', response.statusText)
-                
+
             }
         } catch (error) {
             console.error('Error fetching jobs:', error)
-            
+
         }
     }, [])
 
@@ -47,21 +47,21 @@ export default function JobsManagement() {
             if (response.ok) {
                 setNewJob({ job_number: '', description: '' })
                 fetchJobs()
-                
+
             } else {
                 console.error('Failed to create job:', response.statusText)
-                
+
             }
         } catch (error) {
             console.error('Error creating job:', error)
-            
+
         }
     }
 
     const handleUpdate = async () => {
         if (!editingJob) return
         try {
-            const response = await fetch(`/api/jobs/${editingJob.job_number}`, {
+            const response = await fetch('/api/jobs/', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,28 +73,32 @@ export default function JobsManagement() {
                 fetchJobs()
             } else {
                 console.error('Failed to update job:', response.statusText)
-                
+
             }
         } catch (error) {
             console.error('Error updating job:', error)
-            
+
         }
     }
 
     const handleDelete = async (job_number: string) => {
         try {
-            const response = await fetch(`/api/jobs/${job_number}`, {
+            const response = await fetch(`/api/jobs/`, {
                 method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ job_number })
             })
             if (response.ok) {
                 fetchJobs()
             } else {
                 console.error('Failed to delete job:', response.statusText)
-                
+
             }
         } catch (error) {
             console.error('Error deleting job:', error)
-            
+
         }
     }
 

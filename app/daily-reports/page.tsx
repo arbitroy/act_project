@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, Search, AlertCircle } from 'lucide-react'
+import { Plus, Search, AlertCircle, FileSpreadsheet, Filter } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface DailyReport {
@@ -19,8 +20,8 @@ interface DailyReport {
     job_number: string
     table_number: string
     element_id: string
-    planned_volume: number
-    planned_weight: number
+    planned_volume: number | null
+    planned_weight: number | null
     mep: string
     remarks: string
     status: string
@@ -33,14 +34,27 @@ interface FilterSelectProps {
     placeholder: string
 }
 
+const StatusBadge = ({ status }: { status: string }) => {
+    const statusStyles = {
+        pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        approved: "bg-green-100 text-green-800 border-green-200",
+        rejected: "bg-red-100 text-red-800 border-red-200"
+    }
+    
+    return (
+        <Badge variant="outline" className={`${statusStyles[status as keyof typeof statusStyles]} px-2 py-1`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+    )
+}
 
 const FilterSelect = ({ value, onValueChange, options, placeholder }: FilterSelectProps) => {
     return (
         <Select value={value} onValueChange={onValueChange}>
-            <SelectTrigger>
+            <SelectTrigger className="h-10">
                 <SelectValue placeholder={placeholder} />
             </SelectTrigger>
-            <SelectContent className='bg-white'>
+            <SelectContent className="bg-white">
                 <SelectItem value="all">All {placeholder}s</SelectItem>
                 {options.map((option) => (
                     <SelectItem key={option} value={option}>{option}</SelectItem>
@@ -63,7 +77,6 @@ export default function DailyReportListView() {
     const [tables, setTables] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
-
 
     const fetchDailyReports = useCallback(async () => {
         setIsLoading(true)
@@ -90,8 +103,6 @@ export default function DailyReportListView() {
         fetchJobsAndTables()
     }, [currentPage, searchTerm, filterJob, filterTable, fetchDailyReports])
 
-
-
     const fetchJobsAndTables = async () => {
         try {
             const [jobsResponse, tablesResponse] = await Promise.all([
@@ -111,7 +122,15 @@ export default function DailyReportListView() {
     }
 
     const handleCreateReport = () => {
-        router.push('/daily-report/create')
+        router.push('/daily-report')
+    }
+
+    const handleExportToExcel = () => {
+        // Implement Excel export functionality
+        toast({
+            title: "Export Started",
+            description: "Your report is being generated...",
+        })
     }
 
     const handleStatusChange = async (reportId: string, newStatus: string) => {
@@ -143,74 +162,94 @@ export default function DailyReportListView() {
         }
     }
 
+    const formatNumber = (value: number | string | null | undefined) => {
+        if (value === null || value === undefined) return 'N/A'
+        // Convert string to number if needed and check if it's a valid number
+        const numValue = typeof value === 'string' ? parseFloat(value) : value
+        return isNaN(numValue) ? 'N/A' : numValue.toFixed(2)
+    }
+
     return (
         <Layout>
             <div className="container mx-auto px-4 py-8">
-                <Card>
+                <Card className="shadow-lg">
                     <CardHeader>
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <CardTitle>Daily Reports</CardTitle>
+                                <CardTitle className="text-2xl font-bold">Daily Reports</CardTitle>
                                 <CardDescription>Manage and track your daily casting reports</CardDescription>
                             </div>
-                            {user?.role === 'planned_employee' && (
-                                <Button onClick={handleCreateReport} className="bg-green-600 hover:bg-green-700">
-                                    <Plus className="mr-2 h-4 w-4" /> Create Report
+                            <div className="flex gap-2">
+                                <Button 
+                                    onClick={handleExportToExcel}
+                                    variant="outline"
+                                    className="bg-white hover:bg-gray-50"
+                                >
+                                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
                                 </Button>
-                            )}
+                                {user?.role === 'planned_employee' && (
+                                    <Button onClick={handleCreateReport} className="bg-green-600 hover:bg-green-700">
+                                        <Plus className="mr-2 h-4 w-4" /> Create Report
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <div className="flex flex-col md:flex-row gap-4">
-                                <div className="flex-1 relative">
-                                    <Input
-                                        type="text"
-                                        placeholder="Search by job number, table, or element ID..."
-                                        value={searchTerm}
-                                        onChange={(e) => {
-                                            setSearchTerm(e.target.value)
-                                            setCurrentPage(1)
-                                        }}
-                                        className="pl-10"
-                                    />
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <div className="flex-1">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                        <Input
+                                            type="text"
+                                            placeholder="Search by job number, table, or element ID..."
+                                            value={searchTerm}
+                                            onChange={(e) => {
+                                                setSearchTerm(e.target.value)
+                                                setCurrentPage(1)
+                                            }}
+                                            className="pl-10"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex-1 md:w-1/4">
-                                    <FilterSelect
-                                        value={filterJob}
-                                        onValueChange={(value) => {
-                                            setFilterJob(value)
-                                            setCurrentPage(1)
-                                        }}
-                                        options={jobs}
-                                        placeholder="Job"
-                                    />
-                                </div>
-                                <div className="flex-1 md:w-1/4">
-                                    <FilterSelect
-                                        value={filterTable}
-                                        onValueChange={(value) => {
-                                            setFilterTable(value)
-                                            setCurrentPage(1)
-                                        }}
-                                        options={tables}
-                                        placeholder="Table"
-                                    />
+                                <div className="flex flex-col md:flex-row gap-4 md:w-2/5">
+                                    <div className="flex-1">
+                                        <FilterSelect
+                                            value={filterJob}
+                                            onValueChange={(value) => {
+                                                setFilterJob(value)
+                                                setCurrentPage(1)
+                                            }}
+                                            options={jobs}
+                                            placeholder="Job"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FilterSelect
+                                            value={filterTable}
+                                            onValueChange={(value) => {
+                                                setFilterTable(value)
+                                                setCurrentPage(1)
+                                            }}
+                                            options={tables}
+                                            placeholder="Table"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
                             {error && (
-                                <div className="flex items-center gap-2 p-4 bg-destructive/10 text-destructive rounded-lg">
+                                <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 rounded-lg">
                                     <AlertCircle className="h-5 w-5" />
                                     <span>{error}</span>
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto">
+                            <div className="rounded-lg border shadow-sm overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow>
+                                        <TableRow className="bg-gray-50">
                                             <TableHead>Date</TableHead>
                                             <TableHead>Job No.</TableHead>
                                             <TableHead>Table No.</TableHead>
@@ -227,39 +266,54 @@ export default function DailyReportListView() {
                                         {isLoading ? (
                                             [...Array(5)].map((_, i) => (
                                                 <TableRow key={i}>
-                                                    {[...Array(8)].map((_, j) => (
+                                                    {[...Array(9)].map((_, j) => (
                                                         <TableCell key={j}>
-                                                            <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-[pulse_1.5s_ease-in-out_infinite]"></div>
+                                                            <div className="h-4 bg-gray-100 rounded w-24 animate-pulse"></div>
                                                         </TableCell>
                                                     ))}
                                                 </TableRow>
                                             ))
                                         ) : dailyReports.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={8} className="text-center">No reports found</TableCell>
+                                                <TableCell colSpan={9} className="text-center py-8">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Filter className="h-8 w-8 text-gray-400" />
+                                                        <p className="text-gray-500">No reports found</p>
+                                                    </div>
+                                                </TableCell>
                                             </TableRow>
                                         ) : (
                                             dailyReports.map((report) => (
-                                                <TableRow key={report.id}>
+                                                <TableRow key={report.id} className="hover:bg-gray-50">
                                                     <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
                                                     <TableCell>{report.job_number}</TableCell>
                                                     <TableCell>{report.table_number}</TableCell>
                                                     <TableCell>{report.element_id}</TableCell>
-                                                    <TableCell className="text-right">{report.planned_volume !== null ? report.planned_volume.toFixed(2) : 'N/A'}</TableCell>
-                                                    <TableCell className="text-right">{report.planned_weight !== null ? report.planned_weight.toFixed(2) : 'N/A'}</TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.planned_volume)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.planned_weight)}
+                                                    </TableCell>
                                                     <TableCell>{report.mep}</TableCell>
-                                                    <TableCell>{report.remarks}</TableCell>
-                                                    <TableCell>{report.status}</TableCell>
+                                                    <TableCell>
+                                                        <span className="truncate max-w-[200px] block">
+                                                            {report.remarks}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <StatusBadge status={report.status} />
+                                                    </TableCell>
                                                     {user?.role === 'manager' && (
                                                         <TableCell>
                                                             <Select
                                                                 value={report.status}
                                                                 onValueChange={(value) => handleStatusChange(report.id, value)}
                                                             >
-                                                                <SelectTrigger>
+                                                                <SelectTrigger className="w-[130px]">
                                                                     <SelectValue />
                                                                 </SelectTrigger>
-                                                                <SelectContent className='bg-white'>
+                                                                <SelectContent className="bg-white">
                                                                     <SelectItem value="pending">Pending</SelectItem>
                                                                     <SelectItem value="approved">Approved</SelectItem>
                                                                     <SelectItem value="rejected">Rejected</SelectItem>

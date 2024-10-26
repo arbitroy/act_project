@@ -18,7 +18,15 @@ import Layout from '@/components/Layout'
 import { CalendarIcon, Loader2, ClipboardList, AlertCircle, Building2, Table2, Package } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
-// Define strict interfaces with readonly properties
+// Updated interfaces
+interface Element {
+    readonly id: number
+    readonly element_id: string
+    readonly planned_volume: number
+    readonly planned_weight: number
+    readonly planned_casting_date: string
+}
+
 interface Job {
     readonly id: number
     readonly job_number: string
@@ -31,19 +39,10 @@ interface Table {
     readonly description: string
 }
 
-interface Element {
-    readonly id: number
-    readonly element_id: string
-    readonly volume: number
-    readonly weight: number
-    readonly planned_volume: number
-    readonly planned_weight: number
-}
-
-
-// Define a schema for form validation
+// Updated schema to match the required structure
 const dailyReportSchema = z.object({
     date: z.string().min(1, 'Date is required'),
+    user_id: z.number().min(1, 'User ID is required'),
     job_id: z.union([
         z.number(),
         z.string().transform((val) => parseInt(val, 10))
@@ -56,103 +55,113 @@ const dailyReportSchema = z.object({
         z.number(),
         z.string().transform((val) => parseInt(val, 10))
     ]).refine((val) => !isNaN(val) && val > 0, 'Element is required'),
-    planned_volume: z.number().nonnegative().optional(),
-    planned_weight: z.number().nonnegative().optional(),
+    planned_volume: z.number().min(0, 'Planned volume is required'),
+    planned_weight: z.number().min(0, 'Planned weight is required'),
     mep: z.string().optional(),
-    remarks: z.string().optional()
+    remarks: z.string().optional(),
 })
 
-// Define type for form data based on the schema
 type DailyReportFormData = z.infer<typeof dailyReportSchema>
-
-
 
 export default function DailyReportInput(): JSX.Element {
     const [jobs, setJobs] = useState<readonly Job[]>([])
     const [tables, setTables] = useState<readonly Table[]>([])
     const [elements, setElements] = useState<readonly Element[]>([])
+    const [availableElements, setAvailableElements] = useState<readonly Element[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('basic')
     const { user } = useAuth()
     const router = useRouter()
 
+    const today = new Date().toISOString().split('T')[0]
+
     const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<DailyReportFormData>({
         resolver: zodResolver(dailyReportSchema),
         defaultValues: {
-            date: new Date().toISOString().split('T')[0],
+            date: today,
+            user_id: user?.id || 0,
             planned_volume: 0,
             planned_weight: 0
         }
     })
 
+    const selectedDate = watch('date')
     const selectedElementId = watch('element_id')
 
+    // Fetch data
     useEffect(() => {
-        const fetchTables = async (): Promise<void> => {
+        const fetchData = async () => {
             try {
-                const response = await fetch('/api/tables')
-                if (!response.ok) throw new Error('Failed to fetch tables')
-                const tables: Table[] = await response.json()
-                setTables(tables)
+                const [jobsRes, tablesRes, elementsRes] = await Promise.all([
+                    fetch('/api/jobs'),
+                    fetch('/api/tables'),
+                    fetch('/api/elements')
+                ]);
+
+                if (!jobsRes.ok || !tablesRes.ok || !elementsRes.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const [jobsData, tablesData, elementsData] = await Promise.all([
+                    jobsRes.json(),
+                    tablesRes.json(),
+                    elementsRes.json()
+                ]);
+
+                setJobs(jobsData);
+                setTables(tablesData);
+                setElements(elementsData);
+                console.log(elementsData)
             } catch (error) {
-                console.error('Error fetching tables:', error)
+                console.error('Error fetching data:', error);
                 toast({
                     title: "Error",
-                    description: "Failed to fetch tables data",
+                    description: "Failed to fetch required data",
                     variant: "destructive",
-                })
+                });
+            }
+        };
+
+        void fetchData();
+    }, []);
+
+    // Filter elements based on selected date
+    useEffect(() => {
+        if (selectedDate) {
+            const filteredElements = elements.filter(element => {
+                if (!element.planned_casting_date) return false;
+                
+                // Convert UTC date to local date
+                const plannedDate = new Date(element.planned_casting_date);
+                // Add the timezone offset to get local time
+                plannedDate.setMinutes(plannedDate.getMinutes() + plannedDate.getTimezoneOffset());
+                const localPlannedDate = plannedDate.toISOString().split('T')[0];
+                
+                return localPlannedDate === selectedDate;
+            });
+            
+            setAvailableElements(filteredElements);
+
+            if (filteredElements.length === 0) {
+                toast({
+                    title: "No Elements Planned",
+                    description: "There are no elements planned for casting on this date. Please report to the manager.",
+                    variant: "destructive",
+                });
             }
         }
+    }, [selectedDate, elements]);
 
-        void fetchJobs()
-        void fetchTables()
-        void fetchElements()
-
-    }, [setTables])
-
+    // Update planned values when element is selected
     useEffect(() => {
         if (selectedElementId) {
-            const selectedElement = elements.find(e => e.id === selectedElementId)
+            const selectedElement = elements.find(e => e.id === selectedElementId);
             if (selectedElement) {
-                setValue('planned_volume', selectedElement.planned_volume)
-                setValue('planned_weight', selectedElement.planned_weight)
+                setValue('planned_volume', selectedElement.planned_volume);
+                setValue('planned_weight', selectedElement.planned_weight);
             }
         }
-    }, [selectedElementId, elements, setValue])
-
-    const fetchJobs = async (): Promise<void> => {
-        try {
-            const response = await fetch('/api/jobs')
-            if (!response.ok) throw new Error('Failed to fetch jobs')
-            const jobs: Job[] = await response.json()
-            setJobs(jobs)
-        } catch (error) {
-            console.error('Error fetching jobs:', error)
-            toast({
-                title: "Error",
-                description: "Failed to fetch jobs data",
-                variant: "destructive",
-            })
-        }
-    }
-
-
-
-    const fetchElements = async (): Promise<void> => {
-        try {
-            const response = await fetch('/api/elements')
-            if (!response.ok) throw new Error('Failed to fetch elements')
-            const elements: Element[] = await response.json()
-            setElements(elements)
-        } catch (error) {
-            console.error('Error fetching elements:', error)
-            toast({
-                title: "Error",
-                description: "Failed to fetch elements data",
-                variant: "destructive",
-            })
-        }
-    }
+    }, [selectedElementId, elements, setValue]);
 
     const onSubmit = async (data: DailyReportFormData) => {
         if (!user?.id) {
@@ -160,38 +169,59 @@ export default function DailyReportInput(): JSX.Element {
                 title: "Error",
                 description: "User not authenticated",
                 variant: "destructive",
-            })
-            return
+            });
+            return;
         }
 
-        setIsLoading(true)
+        setIsLoading(true);
         try {
             const response = await fetch('/api/daily-reports', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...data, user_id: user.id })
-            })
+                body: JSON.stringify({
+                    ...data,
+                    user_id: user.id,
+                })
+            });
 
-            if (!response.ok) throw new Error('Failed to submit daily report')
+            if (!response.ok) throw new Error('Failed to submit daily report');
 
             toast({
                 title: "Success",
                 description: "Daily report submitted successfully!",
-            })
-            router.push('/daily-reports')
+            });
+            router.push('/daily-reports');
         } catch (error) {
-            console.error('Error submitting daily report:', error)
+            console.error('Error submitting daily report:', error);
             toast({
                 title: "Error",
                 description: "An error occurred while submitting the daily report",
                 variant: "destructive",
-            })
+            });
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
-    const hasErrors = Object.keys(errors).length > 0
+    const FieldError = ({ error }: { error?: { message?: string } }) => {
+        if (!error?.message) return null;
+        return (
+            <div className="flex items-center mt-1 text-red-500 text-sm">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>{error.message}</span>
+            </div>
+        );
+    };
+
+    // Show warning if no elements are available
+    const noElementsWarning = selectedDate && availableElements.length === 0 && (
+        <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+                No elements are planned for casting on {selectedDate}. Please contact your manager.
+            </AlertDescription>
+        </Alert>
+    );
 
     return (
         <Layout>
@@ -208,23 +238,25 @@ export default function DailyReportInput(): JSX.Element {
                                     <CardDescription className="text-emerald-700">Enter the details for today&apos;s production report</CardDescription>
                                 </div>
                             </div>
-                            <Button
-                                variant="outline"
-                                onClick={() => router.push('/daily-reports')}
-                                className="border-emerald-200 hover:bg-emerald-50 text-emerald-700"
-                            >
-                                View All Reports
-                            </Button>
                         </div>
 
-                        {hasErrors && (
+                        {Object.keys(errors).length > 0 && (
                             <Alert variant="destructive" className="bg-red-50 border-red-200">
                                 <AlertCircle className="h-4 w-4 text-red-600" />
                                 <AlertDescription className="text-red-600">
-                                    Please correct the errors in the form before submitting
+                                    Please correct the following errors:
+                                    <ul className="list-disc list-inside mt-2">
+                                        {Object.entries(errors).map(([field, error]) => (
+                                            <li key={field}>
+                                                {field.charAt(0).toUpperCase() + field.slice(1).replace('_', ' ')}: {error?.message}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </AlertDescription>
                             </Alert>
                         )}
+
+                        {noElementsWarning}
                     </CardHeader>
 
                     <CardContent className="p-6">
@@ -249,6 +281,7 @@ export default function DailyReportInput(): JSX.Element {
 
                                 <TabsContent value="basic" className="space-y-6 pt-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Date Field */}
                                         <div className="space-y-2">
                                             <Label htmlFor="date" className="flex items-center gap-2 text-black">
                                                 <CalendarIcon className="h-4 w-4 text-emerald-600" />
@@ -263,18 +296,16 @@ export default function DailyReportInput(): JSX.Element {
                                                             type="date"
                                                             id="date"
                                                             {...field}
-                                                            className="border-emerald-200 focus:border-emerald-400 focus:ring-emerald-400"
+                                                            className={`border-emerald-200 focus:border-emerald-400 focus:ring-emerald-400 ${errors.date ? 'border-red-500' : ''
+                                                                }`}
                                                         />
-                                                        {errors.date && (
-                                                            <p className="text-sm text-red-500">
-                                                                {errors.date.message}
-                                                            </p>
-                                                        )}
+                                                        <FieldError error={errors.date} />
                                                     </div>
                                                 )}
                                             />
                                         </div>
 
+                                        {/* Job Field */}
                                         <div className="space-y-2">
                                             <Label htmlFor="job_id" className="flex items-center gap-2 text-black">
                                                 <Building2 className="h-4 w-4 text-emerald-600" />
@@ -291,7 +322,8 @@ export default function DailyReportInput(): JSX.Element {
                                                         >
                                                             <SelectTrigger
                                                                 id="job_id"
-                                                                className="border-emerald-200 focus:ring-emerald-400"
+                                                                className={`border-emerald-200 focus:ring-emerald-400 ${errors.job_id ? 'border-red-500' : ''
+                                                                    }`}
                                                             >
                                                                 <SelectValue placeholder="Select Job No." />
                                                             </SelectTrigger>
@@ -307,16 +339,13 @@ export default function DailyReportInput(): JSX.Element {
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
-                                                        {errors.job_id && (
-                                                            <p className="text-sm text-red-500">
-                                                                {errors.job_id.message}
-                                                            </p>
-                                                        )}
+                                                        <FieldError error={errors.job_id} />
                                                     </div>
                                                 )}
                                             />
                                         </div>
 
+                                        {/* Table Field */}
                                         <div className="space-y-2">
                                             <Label htmlFor="table_id" className="flex items-center gap-2 text-black">
                                                 <Table2 className="h-4 w-4 text-emerald-600" />
@@ -333,7 +362,8 @@ export default function DailyReportInput(): JSX.Element {
                                                         >
                                                             <SelectTrigger
                                                                 id="table_id"
-                                                                className="border-emerald-200 focus:ring-emerald-400"
+                                                                className={`border-emerald-200 focus:ring-emerald-400 ${errors.table_id ? 'border-red-500' : ''
+                                                                    }`}
                                                             >
                                                                 <SelectValue placeholder="Select Table No." />
                                                             </SelectTrigger>
@@ -349,16 +379,13 @@ export default function DailyReportInput(): JSX.Element {
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
-                                                        {errors.table_id && (
-                                                            <p className="text-sm text-red-500">
-                                                                {errors.table_id.message}
-                                                            </p>
-                                                        )}
+                                                        <FieldError error={errors.table_id} />
                                                     </div>
                                                 )}
                                             />
                                         </div>
 
+                                        {/* Element Field */}
                                         <div className="space-y-2">
                                             <Label htmlFor="element_id" className="flex items-center gap-2 text-black">
                                                 <Package className="h-4 w-4 text-emerald-600" />
@@ -372,30 +399,28 @@ export default function DailyReportInput(): JSX.Element {
                                                         <Select
                                                             onValueChange={(value) => field.onChange(Number(value))}
                                                             value={field.value?.toString()}
+                                                            disabled={availableElements.length === 0}
                                                         >
                                                             <SelectTrigger
                                                                 id="element_id"
-                                                                className="border-emerald-200 focus:ring-emerald-400"
+                                                                className={`border-emerald-200 focus:ring-emerald-400 ${errors.element_id ? 'border-red-500' : ''
+                                                                    }`}
                                                             >
                                                                 <SelectValue placeholder="Select Element" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                {elements.map((element) => (
+                                                                {availableElements.map((element) => (
                                                                     <SelectItem
                                                                         key={element.id}
                                                                         value={element.id.toString()}
                                                                         className="focus:bg-emerald-50"
                                                                     >
-                                                                        {element.element_id}
+                                                                        {element.element_id} (Volume: {element.planned_volume}, Weight: {element.planned_weight})
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
-                                                        {errors.element_id && (
-                                                            <p className="text-sm text-red-500">
-                                                                {errors.element_id.message}
-                                                            </p>
-                                                        )}
+                                                        <FieldError error={errors.element_id} />
                                                     </div>
                                                 )}
                                             />

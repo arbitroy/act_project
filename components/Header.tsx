@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback} from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { LogOut} from 'lucide-react'
 
@@ -45,7 +45,7 @@ export default function Header() {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                                         <Avatar className="h-10 w-10">
-                                            <AvatarImage src="/placeholder-avatar.png" alt={user.username} />
+                                            
                                             <AvatarFallback className="bg-green-500">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                     </Button>

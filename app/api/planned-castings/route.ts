@@ -46,14 +46,14 @@ export async function POST(request: NextRequest) {
             return authResponse
         }
 
-        const { element_id, planned_volume, planned_weight, planned_date } = await request.json()
+        const { element_id, planned_volume, planned_amount,planned_date } = await request.json()
 
         const query = `
-            INSERT INTO planned_castings (element_id, planned_volume, planned_weight, planned_date)
+            INSERT INTO planned_castings (element_id, planned_volume, planned_amount, planned_date)
             VALUES ($1, $2, $3, $4)
             RETURNING id
         `
-        const result = await queryWithRetry(query, [element_id, planned_volume, planned_weight, planned_date])
+        const result = await queryWithRetry(query, [element_id, planned_volume, planned_amount, planned_date])
 
         return NextResponse.json({ id: result.rows[0].id })
     } catch (error) {

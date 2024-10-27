@@ -20,8 +20,7 @@ import { CalendarIcon, Loader2, ClipboardList, AlertCircle, Building2, Table2, P
 interface PlannedCasting {
     id: number
     element_id: number
-    planned_volume: number
-    planned_weight: number
+    planned_amount: number
     planned_date: string
 }
 
@@ -353,7 +352,6 @@ export default function DailyReportInput(): JSX.Element {
                                                                 {tables.map((table) => (
                                                                     <SelectItem
                                                                         key={table.id}
-                                                
                                                                         value={table.id.toString()}
                                                                         className="focus:bg-emerald-50"
                                                                     >
@@ -366,6 +364,7 @@ export default function DailyReportInput(): JSX.Element {
                                                     </div>
                                                 )}
                                             />
+                
                                         </div>
 
                                         {/* Planned Casting Field */}
@@ -406,7 +405,7 @@ export default function DailyReportInput(): JSX.Element {
                                                                             value={casting.id.toString()}
                                                                             className="focus:bg-emerald-50"
                                                                         >
-                                                                            {element?.element_id} (Volume: {casting.planned_volume}, Weight: {casting.planned_weight})
+                                                                            {element?.element_id} (Planned Amount: {casting.planned_amount})
                                                                         </SelectItem>
                                                                     );
                                                                 })}

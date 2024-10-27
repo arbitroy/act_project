@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
+    const date = searchParams.get('date')
     const page = parseInt(searchParams.get('page') || '1')
     const search = searchParams.get('search') || ''
     const job = searchParams.get('job') || ''
@@ -20,7 +21,8 @@ export async function GET(request: NextRequest) {
         let countQuery = 'SELECT COUNT(*) FROM dailyreports dr JOIN jobs j ON dr.job_id = j.id JOIN tables t ON dr.table_id = t.id JOIN elements e ON dr.element_id = e.id'
         let dataQuery = `
             SELECT dr.*, j.job_number, t.table_number, e.element_id as element_code,
-            pc.planned_volume, pc.planned_weight
+            pc.planned_volume,
+            pc.planned_amount
             FROM dailyreports dr
             JOIN jobs j ON dr.job_id = j.id
             JOIN tables t ON dr.table_id = t.id
@@ -30,8 +32,12 @@ export async function GET(request: NextRequest) {
         const whereClause = []
         const queryParams = []
 
+        if (date) {
+            whereClause.push("dr.date = $" + (queryParams.length + 1))
+            queryParams.push(date)
+        }
         if (search) {
-            whereClause.push("(j.job_number ILIKE $1 OR t.table_number ILIKE $1 OR e.element_id ILIKE $1)")
+            whereClause.push("(j.job_number ILIKE $" + (queryParams.length + 1) + " OR t.table_number ILIKE $" + (queryParams.length + 1) + " OR e.element_id ILIKE $" + (queryParams.length + 1) + ")")
             queryParams.push(`%${search}%`)
         }
         if (job) {

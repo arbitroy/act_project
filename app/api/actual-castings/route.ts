@@ -2,8 +2,6 @@ import { authMiddleware } from '@/middleware/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { queryWithRetry } from '../db'
 
-
-
 // GET all actual castings
 export async function GET(request: NextRequest) {
     const authResponse = await authMiddleware(request)
@@ -11,7 +9,7 @@ export async function GET(request: NextRequest) {
         return authResponse
     }
     try {
-        const result = await queryWithRetry('SELECT * FROM ActualCastings')
+        const result = await queryWithRetry('SELECT * FROM actualcastings')
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching actual castings:', error)
@@ -26,10 +24,10 @@ export async function POST(request: NextRequest) {
         return authResponse
     }
     try {
-        const { reportId, actualCasted, updatedBy } = await request.json()
+        const { daily_report_id, casted_amount, casted_volume, remarks, updated_by } = await request.json()
         const result = await queryWithRetry(
-            'INSERT INTO ActualCastings (ReportID, ActualCasted, UpdatedBy) VALUES ($1, $2, $3) RETURNING *',
-            [reportId, actualCasted, updatedBy]
+            'INSERT INTO actualcastings (daily_report_id, casted_amount, casted_volume, remarks, updated_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [daily_report_id, casted_amount, casted_volume, remarks, updated_by]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {
@@ -45,10 +43,10 @@ export async function PUT(request: NextRequest) {
         return authResponse
     }
     try {
-        const { castingId, actualCasted, updatedBy } = await request.json()
+        const { id, casted_amount, casted_volume, remarks, updated_by } = await request.json()
         const result = await queryWithRetry(
-            'UPDATE ActualCastings SET ActualCasted = $2, UpdatedBy = $3, UpdatedAt = CURRENT_TIMESTAMP WHERE CastingID = $1 RETURNING *',
-            [castingId, actualCasted, updatedBy]
+            'UPDATE actualcastings SET casted_amount = $2, remarks = $3, updated_by = $4, casted_volume = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+            [id, casted_amount, remarks, updated_by, casted_volume]
         )
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Actual casting not found' }, { status: 404 })
@@ -67,8 +65,8 @@ export async function DELETE(request: NextRequest) {
         return authResponse
     }
     try {
-        const { castingId } = await request.json()
-        const result = await queryWithRetry('DELETE FROM ActualCastings WHERE CastingID = $1 RETURNING *', [castingId])
+        const { id } = await request.json()
+        const result = await queryWithRetry('DELETE FROM actualcastings WHERE id = $1 RETURNING *', [id])
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Actual casting not found' }, { status: 404 })
         }

@@ -11,39 +11,38 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Loader2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-
 interface Element {
     id: number
     element_id: string
     volume: string
-    weight: string
 }
 
 interface PlannedCasting {
     id: number
     element_id: number
     planned_volume: number
-    planned_weight: number
+    planned_amount: number
     planned_date: string
 }
 
 interface PlanningForm {
     element_id: string
     planned_volume: number
-    planned_weight: number
+    planned_amount: number
     planned_date: string
 }
 
 interface RemainingQuantity {
     elementId: number
     totalVolume: number
-    totalWeight: number
     totalCasted: number
     remainingVolume: number
-    remainingWeight: number
-    completionPercentage: number
+    completionPercentageVolume: number
+    totalPlannedAmount: number  // Add this
+    totalCastedAmount: number  // Add this
+    remainingAmount: number    // Add this
+    completionPercentageAmount: number  // Add this
 }
-
 
 export default function Planning(): JSX.Element {
     const [elements, setElements] = useState<Element[]>([])
@@ -57,10 +56,11 @@ export default function Planning(): JSX.Element {
         defaultValues: {
             element_id: '',
             planned_volume: 0,
-            planned_weight: 0,
+            planned_amount: 0,
             planned_date: ''
         }
     })
+
 
     useEffect(() => {
         void fetchElements()
@@ -133,6 +133,7 @@ export default function Planning(): JSX.Element {
             setRemainingQuantity(null)
         }
     }
+
     const onSubmit = async (data: PlanningForm): Promise<void> => {
         setIsSubmitting(true)
         try {
@@ -230,20 +231,24 @@ export default function Planning(): JSX.Element {
                                             <p className="text-black font-medium">{remainingQuantity.totalVolume} m³</p>
                                         </div>
                                         <div>
-                                            <Label className="text-black">Total Weight</Label>
-                                            <p className="text-black font-medium">{remainingQuantity.totalWeight} kg</p>
-                                        </div>
-                                        <div>
                                             <Label className="text-black">Remaining Volume</Label>
                                             <p className="text-black font-medium">{remainingQuantity.remainingVolume} m³</p>
                                         </div>
                                         <div>
-                                            <Label className="text-black">Remaining Weight</Label>
-                                            <p className="text-black font-medium">{remainingQuantity.remainingWeight} kg</p>
+                                            <Label className="text-black">Volume Completion</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.completionPercentageVolume}%</p>
                                         </div>
-                                        <div className="col-span-2">
-                                            <Label className="text-black">Completion Percentage</Label>
-                                            <p className="text-black font-medium">{remainingQuantity.completionPercentage}%</p>
+                                        <div>
+                                            <Label className="text-black">Total Amount</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.totalPlannedAmount}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-black">Remaining Amount</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.remainingAmount}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-black">Amount Completion</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.completionPercentageAmount}%</p>
                                         </div>
                                     </div>
                                 )}
@@ -279,28 +284,28 @@ export default function Planning(): JSX.Element {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="planned_weight" className="text-black">
-                                            Planned Weight (kg)
+                                        <Label htmlFor="planned_amount" className="text-black">
+                                            Planned Amount
                                         </Label>
                                         <Controller
-                                            name="planned_weight"
+                                            name="planned_amount"
                                             control={control}
                                             rules={{
-                                                required: "Planned weight is required",
-                                                min: { value: 0, message: "Weight must be positive" }
+                                                required: "Planned amount is required",
+                                                min: { value: 0, message: "Amount must be positive" }
                                             }}
                                             render={({ field: { onChange, value } }) => (
                                                 <div className="space-y-1">
                                                     <Input
                                                         type="number"
-                                                        step="0.01"
+                                                        step="1"
                                                         value={value}
-                                                        onChange={(e) => onChange(parseFloat(e.target.value))}
+                                                        onChange={(e) => onChange(parseInt(e.target.value))}
                                                         className="border-green-200 focus:ring-green-500 focus:border-green-500
                                                                  text-black placeholder-gray-400"
                                                     />
-                                                    {errors.planned_weight && (
-                                                        <p className="text-sm text-red-500">{errors.planned_weight.message}</p>
+                                                    {errors.planned_amount && (
+                                                        <p className="text-sm text-red-500">{errors.planned_amount.message}</p>
                                                     )}
                                                 </div>
                                             )}
@@ -362,7 +367,7 @@ export default function Planning(): JSX.Element {
                 </Card>
 
                 <Card className="max-w-2xl mx-auto mt-8 bg-white shadow-lg border-green-100">
-                    <CardHeader className="border-b border-green-100">
+                <CardHeader className="border-b border-green-100">
                         <CardTitle className="text-2xl text-black">Planned Castings</CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -371,7 +376,7 @@ export default function Planning(): JSX.Element {
                                 <TableRow>
                                     <TableHead>Element ID</TableHead>
                                     <TableHead>Planned Volume (m³)</TableHead>
-                                    <TableHead>Planned Weight (kg)</TableHead>
+                                    <TableHead>Planned Amount</TableHead>
                                     <TableHead>Planned Date</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -380,7 +385,7 @@ export default function Planning(): JSX.Element {
                                     <TableRow key={casting.id}>
                                         <TableCell>{elements.find(e => e.id === casting.element_id)?.element_id}</TableCell>
                                         <TableCell>{casting.planned_volume}</TableCell>
-                                        <TableCell>{casting.planned_weight}</TableCell>
+                                        <TableCell>{casting.planned_amount}</TableCell>
                                         <TableCell>{new Date(casting.planned_date).toLocaleDateString()}</TableCell>
                                     </TableRow>
                                 ))}

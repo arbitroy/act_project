@@ -21,7 +21,7 @@ interface DailyReport {
     table_number: string
     element_id: string
     planned_volume: number | null
-    planned_weight: number | null
+    planned_amount: number | null
     mep: string
     remarks: string
     status: string
@@ -275,8 +275,8 @@ export default function DailyReportListView() {
                                             <TableHead>Job No.</TableHead>
                                             <TableHead>Table No.</TableHead>
                                             <TableHead>Element ID</TableHead>
+                                            <TableHead className="text-right">Planned Amount</TableHead>
                                             <TableHead className="text-right">Planned Volume</TableHead>
-                                            <TableHead className="text-right">Planned Weight</TableHead>
                                             <TableHead>MEP</TableHead>
                                             <TableHead>Remarks</TableHead>
                                             <TableHead>Status</TableHead>
@@ -311,10 +311,10 @@ export default function DailyReportListView() {
                                                     <TableCell>{report.table_number}</TableCell>
                                                     <TableCell>{report.element_id}</TableCell>
                                                     <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.planned_volume)}
+                                                        {formatNumber(report.planned_amount)}
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.planned_weight)}
+                                                        {formatNumber(report.planned_volume)}
                                                     </TableCell>
                                                     <TableCell>{report.mep}</TableCell>
                                                     <TableCell>

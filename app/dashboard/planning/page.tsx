@@ -9,41 +9,62 @@ import { toast } from "@/components/ui/use-toast"
 import Layout from '@/components/Layout'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+
 
 interface Element {
-    id: number  // Changed from string to number
+    id: number
     element_id: string
-    volume: string  // Changed from number to string to match API
-    weight: string  // Changed from number to string to match API
-    planned_volume: number | null
-    planned_weight: number | null
-    planned_casting_date: string | null
+    volume: string
+    weight: string
+}
+
+interface PlannedCasting {
+    id: number
+    element_id: number
+    planned_volume: number
+    planned_weight: number
+    planned_date: string
 }
 
 interface PlanningForm {
     element_id: string
     planned_volume: number
     planned_weight: number
-    planned_casting_date: string
+    planned_date: string
 }
+
+interface RemainingQuantity {
+    elementId: number
+    totalVolume: number
+    totalWeight: number
+    totalCasted: number
+    remainingVolume: number
+    remainingWeight: number
+    completionPercentage: number
+}
+
 
 export default function Planning(): JSX.Element {
     const [elements, setElements] = useState<Element[]>([])
+    const [plannedCastings, setPlannedCastings] = useState<PlannedCasting[]>([])
     const [selectedElement, setSelectedElement] = useState<Element | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    
+    const [remainingQuantity, setRemainingQuantity] = useState<RemainingQuantity | null>(null)
+
     const { control, handleSubmit, reset, formState: { errors } } = useForm<PlanningForm>({
         defaultValues: {
             element_id: '',
             planned_volume: 0,
             planned_weight: 0,
-            planned_casting_date: ''
+            planned_date: ''
         }
     })
 
     useEffect(() => {
         void fetchElements()
+        void fetchPlannedCastings()
     }, [])
 
     const fetchElements = async (): Promise<void> => {
@@ -67,16 +88,56 @@ export default function Planning(): JSX.Element {
         }
     }
 
+    const fetchPlannedCastings = async (): Promise<void> => {
+        try {
+            const response = await fetch('/api/planned-castings')
+            if (!response.ok) {
+                throw new Error('Failed to fetch planned castings')
+            }
+            const data: PlannedCasting[] = await response.json()
+            setPlannedCastings(data)
+        } catch (error) {
+            console.error('Error fetching planned castings:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch planned castings",
+                variant: "destructive",
+            })
+        }
+    }
+
+    const fetchRemainingQuantity = async (elementId: string) => {
+        try {
+            const response = await fetch(`/api/elements/${elementId}/remaining`)
+            if (!response.ok) {
+                throw new Error('Failed to fetch remaining quantity')
+            }
+            const data: RemainingQuantity = await response.json()
+            setRemainingQuantity(data)
+        } catch (error) {
+            console.error('Error fetching remaining quantity:', error)
+            toast({
+                title: "Error",
+                description: "Failed to fetch remaining quantity",
+                variant: "destructive",
+            })
+        }
+    }
+
     const handleElementSelect = (elementId: string) => {
         const element = elements.find(e => e.id === parseInt(elementId, 10))
         setSelectedElement(element || null)
+        if (element) {
+            fetchRemainingQuantity(elementId)
+        } else {
+            setRemainingQuantity(null)
+        }
     }
-
     const onSubmit = async (data: PlanningForm): Promise<void> => {
         setIsSubmitting(true)
         try {
-            const response = await fetch(`/api/elements/${data.element_id}/plan`, {
-                method: 'PUT',
+            const response = await fetch('/api/planned-castings', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -84,20 +145,21 @@ export default function Planning(): JSX.Element {
             })
 
             if (!response.ok) {
-                throw new Error('Failed to update element plan')
+                throw new Error('Failed to create planned casting')
             }
 
             toast({
                 title: "Success",
-                description: "Element plan updated successfully",
+                description: "Planned casting created successfully",
             })
             reset()
             setSelectedElement(null)
+            void fetchPlannedCastings()
         } catch (error) {
-            console.error('Error updating element plan:', error)
+            console.error('Error creating planned casting:', error)
             toast({
                 title: "Error",
-                description: "Failed to update element plan",
+                description: "Failed to create planned casting",
                 variant: "destructive",
             })
         } finally {
@@ -117,7 +179,7 @@ export default function Planning(): JSX.Element {
                     <CardHeader className="border-b border-green-100">
                         <CardTitle className="text-2xl text-black">Element Planning</CardTitle>
                         <CardDescription className="text-black">
-                            Update planning details for construction elements
+                            Create planned castings for construction elements
                         </CardDescription>
                     </CardHeader>
 
@@ -161,15 +223,27 @@ export default function Planning(): JSX.Element {
                                     />
                                 </div>
 
-                                {selectedElement && (
+                                {selectedElement && remainingQuantity && (
                                     <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-md mb-4">
                                         <div>
-                                            <Label className="text-black">Current Volume</Label>
-                                            <p className="text-black font-medium">{selectedElement.volume} m³</p>
+                                            <Label className="text-black">Total Volume</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.totalVolume} m³</p>
                                         </div>
                                         <div>
-                                            <Label className="text-black">Current Weight</Label>
-                                            <p className="text-black font-medium">{selectedElement.weight} kg</p>
+                                            <Label className="text-black">Total Weight</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.totalWeight} kg</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-black">Remaining Volume</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.remainingVolume} m³</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-black">Remaining Weight</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.remainingWeight} kg</p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Label className="text-black">Completion Percentage</Label>
+                                            <p className="text-black font-medium">{remainingQuantity.completionPercentage}%</p>
                                         </div>
                                     </div>
                                 )}
@@ -182,7 +256,7 @@ export default function Planning(): JSX.Element {
                                         <Controller
                                             name="planned_volume"
                                             control={control}
-                                            rules={{ 
+                                            rules={{
                                                 required: "Planned volume is required",
                                                 min: { value: 0, message: "Volume must be positive" }
                                             }}
@@ -211,7 +285,7 @@ export default function Planning(): JSX.Element {
                                         <Controller
                                             name="planned_weight"
                                             control={control}
-                                            rules={{ 
+                                            rules={{
                                                 required: "Planned weight is required",
                                                 min: { value: 0, message: "Weight must be positive" }
                                             }}
@@ -235,23 +309,23 @@ export default function Planning(): JSX.Element {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="planned_casting_date" className="text-black">
+                                    <Label htmlFor="planned_date" className="text-black">
                                         Planned Casting Date
                                     </Label>
                                     <Controller
-                                        name="planned_casting_date"
+                                        name="planned_date"
                                         control={control}
                                         rules={{ required: "Please select a casting date" }}
                                         render={({ field }) => (
                                             <div className="space-y-1">
-                                                <Input 
+                                                <Input
                                                     type="date"
                                                     {...field}
                                                     className="border-green-200 focus:ring-green-500 focus:border-green-500
                                                              text-black"
                                                 />
-                                                {errors.planned_casting_date && (
-                                                    <p className="text-sm text-red-500">{errors.planned_casting_date.message}</p>
+                                                {errors.planned_date && (
+                                                    <p className="text-sm text-red-500">{errors.planned_date.message}</p>
                                                 )}
                                             </div>
                                         )}
@@ -278,13 +352,41 @@ export default function Planning(): JSX.Element {
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Updating...
+                                    Creating...
                                 </>
                             ) : (
-                                'Update Plan'
+                                'Create Plan'
                             )}
                         </Button>
                     </CardFooter>
+                </Card>
+
+                <Card className="max-w-2xl mx-auto mt-8 bg-white shadow-lg border-green-100">
+                    <CardHeader className="border-b border-green-100">
+                        <CardTitle className="text-2xl text-black">Planned Castings</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Element ID</TableHead>
+                                    <TableHead>Planned Volume (m³)</TableHead>
+                                    <TableHead>Planned Weight (kg)</TableHead>
+                                    <TableHead>Planned Date</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {plannedCastings.map((casting) => (
+                                    <TableRow key={casting.id}>
+                                        <TableCell>{elements.find(e => e.id === casting.element_id)?.element_id}</TableCell>
+                                        <TableCell>{casting.planned_volume}</TableCell>
+                                        <TableCell>{casting.planned_weight}</TableCell>
+                                        <TableCell>{new Date(casting.planned_date).toLocaleDateString()}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
                 </Card>
             </div>
         </Layout>

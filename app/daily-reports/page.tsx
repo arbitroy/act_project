@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { Plus, Search, AlertCircle, FileSpreadsheet, Filter } from 'lucide-react'
+import { Plus, Search, AlertCircle, FileSpreadsheet, Filter, Calendar } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface DailyReport {
@@ -73,6 +73,7 @@ export default function DailyReportListView() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterJob, setFilterJob] = useState('all')
     const [filterTable, setFilterTable] = useState('all')
+    const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0])
     const [jobs, setJobs] = useState<string[]>([])
     const [tables, setTables] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -82,7 +83,7 @@ export default function DailyReportListView() {
         setIsLoading(true)
         setError('')
         try {
-            const response = await fetch(`/api/daily-reports?page=${currentPage}&search=${searchTerm}&job=${filterJob === 'all' ? '' : filterJob}&table=${filterTable === 'all' ? '' : filterTable}`)
+            const response = await fetch(`/api/daily-reports?page=${currentPage}&search=${searchTerm}&job=${filterJob === 'all' ? '' : filterJob}&table=${filterTable === 'all' ? '' : filterTable}&date=${filterDate}`)
             if (response.ok) {
                 const data = await response.json()
                 setDailyReports(data.reports)
@@ -96,12 +97,12 @@ export default function DailyReportListView() {
         } finally {
             setIsLoading(false)
         }
-    }, [currentPage, filterJob, filterTable, searchTerm])
+    }, [currentPage, filterJob, filterTable, filterDate, searchTerm])
 
     useEffect(() => {
         fetchDailyReports()
         fetchJobsAndTables()
-    }, [currentPage, searchTerm, filterJob, filterTable, fetchDailyReports])
+    }, [currentPage, searchTerm, filterJob, filterTable, filterDate, fetchDailyReports])
 
     const fetchJobsAndTables = async () => {
         try {
@@ -122,11 +123,18 @@ export default function DailyReportListView() {
     }
 
     const handleCreateReport = () => {
-        router.push('/daily-report')
+        if (user?.id) {
+            router.push(`/daily-report?userId=${user.id}`)
+        } else {
+            toast({
+                title: "Error",
+                description: "User not authenticated",
+                variant: "destructive",
+            })
+        }
     }
 
     const handleExportToExcel = () => {
-        // Implement Excel export functionality
         toast({
             title: "Export Started",
             description: "Your report is being generated...",
@@ -164,7 +172,6 @@ export default function DailyReportListView() {
 
     const formatNumber = (value: number | string | null | undefined) => {
         if (value === null || value === undefined) return 'N/A'
-        // Convert string to number if needed and check if it's a valid number
         const numValue = typeof value === 'string' ? parseFloat(value) : value
         return isNaN(numValue) ? 'N/A' : numValue.toFixed(2)
     }
@@ -213,7 +220,7 @@ export default function DailyReportListView() {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex flex-col md:flex-row gap-4 md:w-2/5">
+                                <div className="flex flex-col md:flex-row gap-4 md:w-3/5">
                                     <div className="flex-1">
                                         <FilterSelect
                                             value={filterJob}
@@ -235,6 +242,20 @@ export default function DailyReportListView() {
                                             options={tables}
                                             placeholder="Table"
                                         />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="relative">
+                                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                            <Input
+                                                type="date"
+                                                value={filterDate}
+                                                onChange={(e) => {
+                                                    setFilterDate(e.target.value)
+                                                    setCurrentPage(1)
+                                                }}
+                                                className="pl-10"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -278,7 +299,7 @@ export default function DailyReportListView() {
                                                 <TableCell colSpan={9} className="text-center py-8">
                                                     <div className="flex flex-col items-center gap-2">
                                                         <Filter className="h-8 w-8 text-gray-400" />
-                                                        <p className="text-gray-500">No reports found</p>
+                                                        <p className="text-gray-500">No reports found for the selected date</p>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -325,6 +346,7 @@ export default function DailyReportListView() {
                                             ))
                                         )}
                                     </TableBody>
+                                
                                 </Table>
                             </div>
 

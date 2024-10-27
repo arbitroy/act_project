@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
     try {
         let countQuery = 'SELECT COUNT(*) FROM dailyreports dr JOIN jobs j ON dr.job_id = j.id JOIN tables t ON dr.table_id = t.id JOIN elements e ON dr.element_id = e.id'
         let dataQuery = `
-            SELECT dr.id, dr.date, j.job_number, t.table_number, e.element_id,
-                   e.planned_volume, e.planned_weight, dr.mep, dr.remarks, dr.status
+            SELECT dr.*, j.job_number, t.table_number, e.element_id as element_code,
+            pc.planned_volume, pc.planned_weight
             FROM dailyreports dr
             JOIN jobs j ON dr.job_id = j.id
             JOIN tables t ON dr.table_id = t.id
             JOIN elements e ON dr.element_id = e.id
+            LEFT JOIN planned_castings pc ON dr.element_id = pc.element_id AND dr.date = pc.planned_date
         `
         const whereClause = []
         const queryParams = []

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import * as z from 'zod'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,15 +16,13 @@ import { toast } from "@/components/ui/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Layout from '@/components/Layout'
 import { CalendarIcon, Loader2, ClipboardList, AlertCircle, Building2, Table2, Package } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
 
-// Updated interfaces
-interface Element {
-    readonly id: number
-    readonly element_id: string
-    readonly planned_volume: number
-    readonly planned_weight: number
-    readonly planned_casting_date: string
+interface PlannedCasting {
+    id: number
+    element_id: number
+    planned_volume: number
+    planned_weight: number
+    planned_date: string
 }
 
 interface Job {
@@ -39,7 +37,11 @@ interface Table {
     readonly description: string
 }
 
-// Updated schema to match the required structure
+interface Element {
+    readonly id: number
+    readonly element_id: string
+}
+
 const dailyReportSchema = z.object({
     date: z.string().min(1, 'Date is required'),
     user_id: z.number().min(1, 'User ID is required'),
@@ -55,8 +57,7 @@ const dailyReportSchema = z.object({
         z.number(),
         z.string().transform((val) => parseInt(val, 10))
     ]).refine((val) => !isNaN(val) && val > 0, 'Element is required'),
-    planned_volume: z.number().min(0, 'Planned volume is required'),
-    planned_weight: z.number().min(0, 'Planned weight is required'),
+    planned_casting_id: z.number().min(1, 'Planned casting is required'),
     mep: z.string().optional(),
     remarks: z.string().optional(),
 })
@@ -67,11 +68,12 @@ export default function DailyReportInput(): JSX.Element {
     const [jobs, setJobs] = useState<readonly Job[]>([])
     const [tables, setTables] = useState<readonly Table[]>([])
     const [elements, setElements] = useState<readonly Element[]>([])
-    const [availableElements, setAvailableElements] = useState<readonly Element[]>([])
+    const [plannedCastings, setPlannedCastings] = useState<PlannedCasting[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('basic')
-    const { user } = useAuth()
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const userId = searchParams.get('userId')
 
     const today = new Date().toISOString().split('T')[0]
 
@@ -79,16 +81,12 @@ export default function DailyReportInput(): JSX.Element {
         resolver: zodResolver(dailyReportSchema),
         defaultValues: {
             date: today,
-            user_id: user?.id || 0,
-            planned_volume: 0,
-            planned_weight: 0
+            user_id: userId ? parseInt(userId, 10) : 0,
         }
     })
 
     const selectedDate = watch('date')
-    const selectedElementId = watch('element_id')
 
-    // Fetch data
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -111,7 +109,6 @@ export default function DailyReportInput(): JSX.Element {
                 setJobs(jobsData);
                 setTables(tablesData);
                 setElements(elementsData);
-                console.log(elementsData)
             } catch (error) {
                 console.error('Error fetching data:', error);
                 toast({
@@ -125,46 +122,32 @@ export default function DailyReportInput(): JSX.Element {
         void fetchData();
     }, []);
 
-    // Filter elements based on selected date
     useEffect(() => {
         if (selectedDate) {
-            const filteredElements = elements.filter(element => {
-                if (!element.planned_casting_date) return false;
-                
-                // Convert UTC date to local date
-                const plannedDate = new Date(element.planned_casting_date);
-                // Add the timezone offset to get local time
-                plannedDate.setMinutes(plannedDate.getMinutes() + plannedDate.getTimezoneOffset());
-                const localPlannedDate = plannedDate.toISOString().split('T')[0];
-                
-                return localPlannedDate === selectedDate;
+            fetchPlannedCastings(selectedDate);
+        }
+    }, [selectedDate]);
+
+    const fetchPlannedCastings = async (date: string) => {
+        try {
+            const response = await fetch(`/api/planned-castings?date=${date}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch planned castings');
+            }
+            const data = await response.json();
+            setPlannedCastings(data);
+        } catch (error) {
+            console.error('Error fetching planned castings:', error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch planned castings",
+                variant: "destructive",
             });
-            
-            setAvailableElements(filteredElements);
-
-            if (filteredElements.length === 0) {
-                toast({
-                    title: "No Elements Planned",
-                    description: "There are no elements planned for casting on this date. Please report to the manager.",
-                    variant: "destructive",
-                });
-            }
         }
-    }, [selectedDate, elements]);
-
-    // Update planned values when element is selected
-    useEffect(() => {
-        if (selectedElementId) {
-            const selectedElement = elements.find(e => e.id === selectedElementId);
-            if (selectedElement) {
-                setValue('planned_volume', selectedElement.planned_volume);
-                setValue('planned_weight', selectedElement.planned_weight);
-            }
-        }
-    }, [selectedElementId, elements, setValue]);
+    };
 
     const onSubmit = async (data: DailyReportFormData) => {
-        if (!user?.id) {
+        if (!userId) {
             toast({
                 title: "Error",
                 description: "User not authenticated",
@@ -180,7 +163,7 @@ export default function DailyReportInput(): JSX.Element {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...data,
-                    user_id: user.id,
+                    user_id: parseInt(userId, 10),
                 })
             });
 
@@ -213,12 +196,11 @@ export default function DailyReportInput(): JSX.Element {
         );
     };
 
-    // Show warning if no elements are available
-    const noElementsWarning = selectedDate && availableElements.length === 0 && (
+    const noPlannedCastingsWarning = selectedDate && plannedCastings.length === 0 && (
         <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-                No elements are planned for casting on {selectedDate}. Please contact your manager.
+                No planned castings for {selectedDate}. Please contact your manager.
             </AlertDescription>
         </Alert>
     );
@@ -256,7 +238,7 @@ export default function DailyReportInput(): JSX.Element {
                             </Alert>
                         )}
 
-                        {noElementsWarning}
+                        {noPlannedCastingsWarning}
                     </CardHeader>
 
                     <CardContent className="p-6">
@@ -371,6 +353,7 @@ export default function DailyReportInput(): JSX.Element {
                                                                 {tables.map((table) => (
                                                                     <SelectItem
                                                                         key={table.id}
+                                                
                                                                         value={table.id.toString()}
                                                                         className="focus:bg-emerald-50"
                                                                     >
@@ -385,42 +368,51 @@ export default function DailyReportInput(): JSX.Element {
                                             />
                                         </div>
 
-                                        {/* Element Field */}
+                                        {/* Planned Casting Field */}
                                         <div className="space-y-2">
-                                            <Label htmlFor="element_id" className="flex items-center gap-2 text-black">
+                                            <Label htmlFor="planned_casting_id" className="flex items-center gap-2 text-black">
                                                 <Package className="h-4 w-4 text-emerald-600" />
-                                                Element ID
+                                                Planned Casting
                                             </Label>
                                             <Controller
-                                                name="element_id"
+                                                name="planned_casting_id"
                                                 control={control}
                                                 render={({ field }) => (
                                                     <div className="space-y-1">
                                                         <Select
-                                                            onValueChange={(value) => field.onChange(Number(value))}
+                                                            onValueChange={(value) => {
+                                                                const plannedCasting = plannedCastings.find(pc => pc.id === Number(value));
+                                                                if (plannedCasting) {
+                                                                    field.onChange(Number(value));
+                                                                    setValue('element_id', plannedCasting.element_id);
+                                                                }
+                                                            }}
                                                             value={field.value?.toString()}
-                                                            disabled={availableElements.length === 0}
+                                                            disabled={plannedCastings.length === 0}
                                                         >
                                                             <SelectTrigger
-                                                                id="element_id"
-                                                                className={`border-emerald-200 focus:ring-emerald-400 ${errors.element_id ? 'border-red-500' : ''
+                                                                id="planned_casting_id"
+                                                                className={`border-emerald-200 focus:ring-emerald-400 ${errors.planned_casting_id ? 'border-red-500' : ''
                                                                     }`}
                                                             >
-                                                                <SelectValue placeholder="Select Element" />
+                                                                <SelectValue placeholder="Select Planned Casting" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                {availableElements.map((element) => (
-                                                                    <SelectItem
-                                                                        key={element.id}
-                                                                        value={element.id.toString()}
-                                                                        className="focus:bg-emerald-50"
-                                                                    >
-                                                                        {element.element_id} (Volume: {element.planned_volume}, Weight: {element.planned_weight})
-                                                                    </SelectItem>
-                                                                ))}
+                                                                {plannedCastings.map((casting) => {
+                                                                    const element = elements.find(e => e.id === casting.element_id);
+                                                                    return (
+                                                                        <SelectItem
+                                                                            key={casting.id}
+                                                                            value={casting.id.toString()}
+                                                                            className="focus:bg-emerald-50"
+                                                                        >
+                                                                            {element?.element_id} (Volume: {casting.planned_volume}, Weight: {casting.planned_weight})
+                                                                        </SelectItem>
+                                                                    );
+                                                                })}
                                                             </SelectContent>
                                                         </Select>
-                                                        <FieldError error={errors.element_id} />
+                                                        <FieldError error={errors.planned_casting_id} />
                                                     </div>
                                                 )}
                                             />

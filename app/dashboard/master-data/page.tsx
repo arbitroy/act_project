@@ -5,7 +5,8 @@ import { cookies } from 'next/headers'
 import Layout from '@/components/Layout'
 import MasterDataTabs from './MasterDataTabs'
 
-export default async function MasterDataManagement() {    const cookieStore = cookies()
+export default async function MasterDataManagement() {
+    const cookieStore = cookies()
     const token = cookieStore.get('token')
 
     if (!token) {
@@ -13,10 +14,10 @@ export default async function MasterDataManagement() {    const cookieStore = co
     }
 
     try {
-        const user = jwt.verify(token.value, process.env.JWT_SECRET as string) as { 
-            id: number, 
-            username: string, 
-            role: string 
+        const user = jwt.verify(token.value, process.env.JWT_SECRET as string) as {
+            id: number,
+            username: string,
+            role: string
         }
 
         if (user.role !== 'manager') {

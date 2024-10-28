@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { Plus, Search, AlertCircle, FileSpreadsheet, Filter, Calendar } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import PDFExportView from './PDFExportView'
+import { createRoot } from 'react-dom/client';
 
 interface DailyReport {
     id: string
@@ -134,11 +136,65 @@ export default function DailyReportListView() {
         }
     }
 
-    const handleExportToExcel = () => {
-        toast({
-            title: "Export Started",
-            description: "Your report is being generated...",
-        })
+    const handleExportToExcel = async () => {
+        try {
+            // Fetch all data for the current date without pagination
+            const response = await fetch(`/api/daily-reports?date=${filterDate}&page=1&limit=1000`)
+            if (!response.ok) throw new Error('Failed to fetch data')
+            
+            const data = await response.json()
+            
+            // Create a new window with the PDF view
+            const printWindow = window.open('', '_blank')
+            if (!printWindow) {
+                toast({
+                    title: "Error",
+                    description: "Please allow pop-ups to generate PDF",
+                    variant: "destructive",
+                })
+                return
+            }
+    
+            // Write the content to the new window
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>ACT Casting Plan - ${filterDate}</title>
+                        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                    </head>
+                    <body>
+                        <div id="root"></div>
+                    </body>
+                </html>
+            `)
+    
+            // Render the PDF view component
+            const container = printWindow.document.getElementById('root')
+            if (container) {
+                const root = createRoot(container)
+                root.render(<PDFExportView dailyReports={data.reports} />)
+            }
+    
+            // Print the window
+            setTimeout(() => {
+                printWindow.print()
+                // Close the window after printing (optional)
+                // printWindow.close()
+            }, 1000)
+    
+            toast({
+                title: "Success",
+                description: "PDF generated successfully",
+            })
+        } catch (error) {
+            console.error('Error generating PDF:', error)
+            toast({
+                title: "Error",
+                description: "Failed to generate PDF",
+                variant: "destructive",
+            })
+        }
     }
 
     const handleStatusChange = async (reportId: string, newStatus: string) => {

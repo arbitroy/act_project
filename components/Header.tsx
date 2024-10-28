@@ -1,18 +1,21 @@
 'use client'
-
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/useAuth'
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback} from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { LogOut} from 'lucide-react'
+import type { UseAuthReturn } from '@/hooks/useAuth' // You'll need to create this type
 
-export default function Header() {
+interface HeaderProps {
+    auth: UseAuthReturn
+}
+
+export default function Header({ auth }: HeaderProps) {
     const router = useRouter()
     const pathname = usePathname()
-    const { user, logout } = useAuth()
+    const { user, logout } = auth
     const [pageTitle, setPageTitle] = useState('')
 
     useEffect(() => {
@@ -41,16 +44,15 @@ export default function Header() {
                     </div>
                     <div className="flex items-center space-x-4">
                         {user && (
-                            <DropdownMenu >
+                            <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                                         <Avatar className="h-10 w-10">
-                                            
                                             <AvatarFallback className="bg-green-500">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 bg-white" align="end" forceMount >
+                                <DropdownMenuContent className="w-56 bg-white" align="end" forceMount>
                                     <DropdownMenuLabel className="font-normal">
                                         <div className="flex flex-col space-y-1">
                                             <p className="text-sm font-medium leading-none">{user.username}</p>

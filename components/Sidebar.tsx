@@ -1,8 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
 import { Button } from "@/components/ui/button"
+import type { UseAuthReturn } from '@/hooks/useAuth'
+
+interface SidebarProps {
+    auth: UseAuthReturn
+}
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', role: 'all' },
@@ -12,13 +16,9 @@ const navigation = [
     { name: 'Actual Casting', href: '/employee/actual-casting', role: 'actual_employee' }
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ auth }: SidebarProps) {
     const pathname = usePathname()
-    const { user, loading } = useAuth()
-
-    if (loading) {
-        return <div>Loading...</div>
-    }
+    const { user } = auth
 
     return (
         <div className="bg-gray-800 text-white w-64 space-y-6 py-7 px-4 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">

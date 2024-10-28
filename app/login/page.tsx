@@ -1,48 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function Login() {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [error, setError] = useState('')
     const router = useRouter()
-
-    useEffect(() => {
-        // Check if user is already logged in
-        const checkAuth = async () => {
-            try {
-                const res = await fetch('/api/auth/check')
-                if (res.ok) {
-                    router.push('/dashboard')
-                }
-            } catch (error) {
-                console.error('Error checking authentication:', error)
-            }
-        }
-        checkAuth()
-    }, [router])
+    const { login, loading, error } = useAuth()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError('') // Clear any previous errors
         try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
-            })
-            const data = await response.json()
-            if (data.success) {
-                    router.push('/dashboard');
-            } else {
-                setError(data.message || 'Login failed. Please try again.')
-            }
+            await login(username, password)
+            // If login succeeds (no error thrown), redirect to dashboard
+            router.push('/dashboard')
         } catch (error) {
-            console.error('Login error:', error)
-            setError('An unexpected error occurred. Please try again.')
+            // Error handling is managed by useAuth hook
+            console.error('Login submission error:', error)
         }
     }
 
@@ -61,7 +38,7 @@ export default function Login() {
                                 </svg>
                             </div>
                             <div className="ml-3">
-                                <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                                <h3 className="text-sm font-medium text-red-800">{error.message}</h3>
                             </div>
                         </div>
                     </div>
@@ -100,9 +77,10 @@ export default function Login() {
                     <div>
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            disabled={loading}
+                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
                         >
-                            Sign in
+                            {loading ? 'Signing in...' : 'Sign in'}
                         </button>
                     </div>
                 </form>

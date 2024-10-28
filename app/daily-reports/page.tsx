@@ -21,7 +21,9 @@ interface DailyReport {
     date: string
     job_number: string
     table_number: string
-    element_id: string
+    element_code: string
+    already_casted: string | number
+    remaining_qty: string | number
     planned_volume: number | null
     planned_amount: number | null
     mep: string
@@ -39,10 +41,10 @@ interface FilterSelectProps {
 const StatusBadge = ({ status }: { status: string }) => {
     const statusStyles = {
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-        approved: "bg-green-100 text-green-800 border-green-200",
-        rejected: "bg-red-100 text-red-800 border-red-200"
+        'in-progress': "bg-blue-100 text-blue-800 border-blue-200",
+        completed: "bg-green-100 text-green-800 border-green-200"
     }
-    
+
     return (
         <Badge variant="outline" className={`${statusStyles[status as keyof typeof statusStyles]} px-2 py-1`}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -80,6 +82,7 @@ export default function DailyReportListView() {
     const [tables, setTables] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState('')
+    const [pdfExportOption, setPdfExportOption] = useState('current')
 
     const fetchDailyReports = useCallback(async () => {
         setIsLoading(true)
@@ -135,16 +138,17 @@ export default function DailyReportListView() {
             })
         }
     }
-
-    const handleExportToExcel = async () => {
+    const handleExportToPDF = async () => {
         try {
-            // Fetch all data for the current date without pagination
-            const response = await fetch(`/api/daily-reports?date=${filterDate}&page=1&limit=1000`)
+            let url = '/api/daily-reports?page=1&limit=1000'
+            if (pdfExportOption === 'current') {
+                url += `&date=${filterDate}`
+            }
+            const response = await fetch(url)
             if (!response.ok) throw new Error('Failed to fetch data')
-            
+
             const data = await response.json()
-            
-            // Create a new window with the PDF view
+
             const printWindow = window.open('', '_blank')
             if (!printWindow) {
                 toast({
@@ -154,13 +158,12 @@ export default function DailyReportListView() {
                 })
                 return
             }
-    
-            // Write the content to the new window
+
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                     <head>
-                        <title>ACT Casting Plan - ${filterDate}</title>
+                        <title>ACT Casting Plan - ${pdfExportOption === 'current' ? filterDate : 'All Dates'}</title>
                         <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
                     </head>
                     <body>
@@ -168,21 +171,17 @@ export default function DailyReportListView() {
                     </body>
                 </html>
             `)
-    
-            // Render the PDF view component
+
             const container = printWindow.document.getElementById('root')
             if (container) {
                 const root = createRoot(container)
                 root.render(<PDFExportView dailyReports={data.reports} />)
             }
-    
-            // Print the window
+
             setTimeout(() => {
                 printWindow.print()
-                // Close the window after printing (optional)
-                // printWindow.close()
             }, 1000)
-    
+
             toast({
                 title: "Success",
                 description: "PDF generated successfully",
@@ -243,12 +242,24 @@ export default function DailyReportListView() {
                                 <CardDescription>Manage and track your daily casting reports</CardDescription>
                             </div>
                             <div className="flex gap-2">
-                                <Button 
-                                    onClick={handleExportToExcel}
+                                <Select
+                                    value={pdfExportOption}
+                                    onValueChange={setPdfExportOption}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Select PDF export option" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="current">Current Date</SelectItem>
+                                        <SelectItem value="all">All Dates</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    onClick={handleExportToPDF}
                                     variant="outline"
                                     className="bg-white hover:bg-gray-50"
                                 >
-                                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export
+                                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export PDF
                                 </Button>
                                 {user?.role === 'planned_employee' && (
                                     <Button onClick={handleCreateReport} className="bg-green-600 hover:bg-green-700">
@@ -331,6 +342,8 @@ export default function DailyReportListView() {
                                             <TableHead>Job No.</TableHead>
                                             <TableHead>Table No.</TableHead>
                                             <TableHead>Element ID</TableHead>
+                                            <TableHead>Already Casted (nos)</TableHead>
+                                            <TableHead>Remaining Qty (nos)</TableHead>
                                             <TableHead className="text-right">Planned Amount</TableHead>
                                             <TableHead className="text-right">Planned Volume</TableHead>
                                             <TableHead>MEP</TableHead>
@@ -342,9 +355,9 @@ export default function DailyReportListView() {
                                     <TableBody>
                                         {isLoading ? (
                                             [...Array(5)].map((_, i) => (
-                                                <TableRow key={i}>
+                                                <TableRow key={`loading-row-${i}`}>
                                                     {[...Array(9)].map((_, j) => (
-                                                        <TableCell key={j}>
+                                                        <TableCell key={`loading-cell-${i}-${j}`}>
                                                             <div className="h-4 bg-gray-100 rounded w-24 animate-pulse"></div>
                                                         </TableCell>
                                                     ))}
@@ -360,12 +373,18 @@ export default function DailyReportListView() {
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            dailyReports.map((report) => (
-                                                <TableRow key={report.id} className="hover:bg-gray-50">
+                                            dailyReports.map((report, index) => (
+                                                <TableRow key={`${report.id}-${index}`} className="hover:bg-gray-50">
                                                     <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
                                                     <TableCell>{report.job_number}</TableCell>
                                                     <TableCell>{report.table_number}</TableCell>
-                                                    <TableCell>{report.element_id}</TableCell>
+                                                    <TableCell>{report.element_code}</TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.already_casted)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.remaining_qty)}
+                                                    </TableCell>
                                                     <TableCell className="text-right font-mono">
                                                         {formatNumber(report.planned_amount)}
                                                     </TableCell>
@@ -392,8 +411,8 @@ export default function DailyReportListView() {
                                                                 </SelectTrigger>
                                                                 <SelectContent className="bg-white">
                                                                     <SelectItem value="pending">Pending</SelectItem>
-                                                                    <SelectItem value="approved">Approved</SelectItem>
-                                                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                                                    <SelectItem value="in_progress">In progress</SelectItem>
+                                                                    <SelectItem value="completed">Completed</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                         </TableCell>
@@ -402,7 +421,6 @@ export default function DailyReportListView() {
                                             ))
                                         )}
                                     </TableBody>
-                                
                                 </Table>
                             </div>
 

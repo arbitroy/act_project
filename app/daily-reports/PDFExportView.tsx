@@ -5,6 +5,7 @@ interface DailyReport {
     id: string | number;
     job_number: string;
     table_number: string;
+    element_code: string;
     element_id: string;
     already_casted: string | number;
     remaining_qty: string | number;
@@ -50,8 +51,16 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
         return reports.reduce((sum, report) =>
             sum + (safeNumber(report.planned_volume) * safeNumber(report.planned_amount)), 0);
     };
+    const calculateAlreadyCasted = (reports: DailyReport[]): number => {
+        return reports.reduce((sum, report) => sum + safeNumber(report.already_casted), 0);
+    };
 
+    const calculateRemainingQuantity = (reports: DailyReport[]): number => {
+        return reports.reduce((sum, report) => sum + safeNumber(report.remaining_qty), 0);
+    };
     const today = new Date();
+    const totalAlreadyCasted = calculateAlreadyCasted(dailyReports);
+    const totalRemainingQuantity = calculateRemainingQuantity(dailyReports);
     const totalVolume = calculateTotalVolume(dailyReports);
     const totalWeight = calculateTotalWeight(totalVolume);
     const totalPlannedAmount = calculateTotalPlannedAmount(dailyReports);
@@ -96,7 +105,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                                     <td className="border p-2">{index + 1}</td>
                                     <td className="border p-2">{report.job_number}</td>
                                     <td className="border p-2">{report.table_number}</td>
-                                    <td className="border p-2">{report.element_id}</td>
+                                    <td className="border p-2">{report.element_code}</td>
                                     <td className="border p-2 text-right">
                                         {safeNumber(report.already_casted)}
                                     </td>
@@ -121,7 +130,13 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                             ))}
                             {/* Grand Total Row */}
                             <tr className="border font-bold bg-gray-50">
-                                <td colSpan={6} className="border p-2 text-right">GRAND TOTAL</td>
+                                <td colSpan={4} className="border p-2 text-right">GRAND TOTAL</td>
+                                <td className="border p-2 text-right">
+                                    {totalAlreadyCasted.toFixed(2)}
+                                </td>
+                                <td className="border p-2 text-right">
+                                    {totalRemainingQuantity.toFixed(2)}
+                                </td>
                                 <td className="border p-2 text-right">
                                     {totalVolume.toFixed(2)}
                                 </td>

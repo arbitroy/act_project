@@ -20,9 +20,27 @@ export async function GET(request: NextRequest) {
     try {
         let countQuery = 'SELECT COUNT(*) FROM dailyreports dr JOIN jobs j ON dr.job_id = j.id JOIN tables t ON dr.table_id = t.id JOIN elements e ON dr.element_id = e.id'
         let dataQuery = `
-            SELECT dr.*, j.job_number, t.table_number, e.element_id as element_code,
-            pc.planned_volume,
-            pc.planned_amount
+            SELECT 
+                dr.*, 
+                j.job_number, 
+                t.table_number, 
+                e.element_id as element_code,
+                pc.planned_volume,
+                pc.planned_amount,
+                COALESCE(
+                    (SELECT SUM(ac.casted_amount) 
+                    FROM actualcastings ac
+                    JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
+                    WHERE dr2.element_id = dr.element_id 
+                    AND dr2.date <= dr.date), 
+                0) as already_casted,
+                GREATEST(0, pc.planned_amount - COALESCE(
+                    (SELECT SUM(ac.casted_amount) 
+                    FROM actualcastings ac
+                    JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
+                    WHERE dr2.element_id = dr.element_id 
+                    AND dr2.date <= dr.date),
+                0)) as remaining_qty
             FROM dailyreports dr
             JOIN jobs j ON dr.job_id = j.id
             JOIN tables t ON dr.table_id = t.id
@@ -85,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const result = await queryWithRetry(
-            'INSERT INTO dailyreports (date, user_id, job_id, table_id, element_id, mep, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            'INSERT INTO dailyreports ( ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [date, user_id, job_id, table_id, element_id, mep, remarks]
         )
 

@@ -4,64 +4,202 @@ import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, AreaChart, Area, LineChart, Line } from "recharts"
-import React from 'react'
+import { 
+    Bar, 
+    BarChart, 
+    Cell, 
+    Legend, 
+    Pie, 
+    PieChart, 
+    ResponsiveContainer, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    LineChart, 
+    Line
+} from "recharts"
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 
-// Mock data remains the same
-const dailyCastingData = [
-    { date: "2023-10-01", plannedAmount: 100, actualAmount: 95 },
-    { date: "2023-10-02", plannedAmount: 120, actualAmount: 115 },
-    { date: "2023-10-03", plannedAmount: 110, actualAmount: 105 },
-    { date: "2023-10-04", plannedAmount: 130, actualAmount: 125 },
-    { date: "2023-10-05", plannedAmount: 90, actualAmount: 88 },
-    { date: "2023-10-06", plannedAmount: 100, actualAmount: 102 },
-    { date: "2023-10-07", plannedAmount: 110, actualAmount: 108 },
-]
-
-const elementCompletionData = [
-    { name: "Completed", value: 65 },
-    { name: "In Progress", value: 25 },
-    { name: "Pending", value: 10 },
-]
-
-const monthlyProgressData = [
-    { month: "Jan", planned: 100, actual: 95 },
-    { month: "Feb", planned: 120, actual: 115 },
-    { month: "Mar", planned: 140, actual: 130 },
-    { month: "Apr", planned: 160, actual: 155 },
-    { month: "May", planned: 180, actual: 175 },
-    { month: "Jun", planned: 200, actual: 190 },
-]
-
-
-
-// Custom color palette
+// Strongly typed color palette
 const colors = {
-    primary: '#15803d', // Green-700
-    secondary: '#22c55e', // Green-500
-    tertiary: '#86efac', // Green-300
-    background: '#f0fdf4', // Green-50
-    border: '#BBF7D0', // Green-200
+    primary: '#15803d',
+    secondary: '#22c55e',
+    tertiary: '#86efac',
+    background: '#f0fdf4',
+    border: '#BBF7D0',
+} as const
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'] as const
+
+// Type definitions for dashboard data
+interface DailyCastingEntry {
+    date: string;
+    planned_amount: number;
+    actual_amount: number;
 }
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
+
+interface ElementCompletionEntry {
+    status: string;
+    value: number;
+}
+
+interface MonthlyProgressEntry {
+    month: string;
+    planned: number;
+    actual: number;
+}
+
+interface DashboardData {
+    dailyCastingData: DailyCastingEntry[];
+    elementCompletionData: ElementCompletionEntry[];
+    monthlyProgressData: MonthlyProgressEntry[];
+}
+
+
+
+interface ChartCardProps {
+    title: string;
+    description: string;
+    children: React.ReactNode;
+}
+
+
+
+const ChartCard: React.FC<ChartCardProps> = ({ title, description, children }) => (
+    <Card className="border-green-200 shadow-lg">
+        <CardHeader className="border-b border-green-100">
+            <CardTitle className="text-black">{title}</CardTitle>
+            <CardDescription className="text-gray-600">{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+            {children}
+        </CardContent>
+    </Card>
+)
+
+
 
 export default function ManagerDashboard() {
     const { user, loading, error } = useAuth()
     const router = useRouter()
+    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+    const [dataLoading, setDataLoading] = useState(true)
+    const [fetchError, setFetchError] = useState<string | null>(null)
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!loading) {
             if (!user) {
                 router.push('/login')
             } else if (user.role !== 'manager') {
                 router.push('/dashboard')
+            } else {
+                void fetchDashboardData()
             }
         }
     }, [user, loading, router])
 
-    if (loading) {
+    const fetchDashboardData = async (): Promise<void> => {
+        try {
+            const response = await fetch('/api/dashboard')
+            if (!response.ok) {
+                throw new Error(`Failed to fetch dashboard data: ${response.statusText}`)
+            }
+            const data = await response.json() as DashboardData
+            setDashboardData(data)
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+            console.error('Error fetching dashboard data:', errorMessage)
+            setFetchError(errorMessage)
+        } finally {
+            setDataLoading(false)
+        }
+    }
+
+    const renderDailyCastingChart = (data: DailyCastingEntry[]) => (
+        <ChartContainer className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                        dataKey="date" 
+                        stroke="#000000"
+                        tickFormatter={(value: string) => new Date(value).toLocaleDateString()}
+                    />
+                    <YAxis stroke="#000000" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="planned_amount" fill={colors.primary} name="Planned Amount" />
+                    <Bar dataKey="actual_amount" fill={colors.secondary} name="Actual Amount" />
+                </BarChart>
+            </ResponsiveContainer>
+        </ChartContainer>
+    )
+
+    const renderElementCompletionChart = (data: ElementCompletionEntry[]) => (
+        <ChartContainer className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                    <Pie
+                        data={data}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        dataKey="value"
+                        nameKey="status"
+                        label={({ name, percent }: { name?: string; percent?: number }) => 
+                            `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`
+                        }
+                    >
+                        {data.map((_, index) => (
+                            <Cell 
+                                key={`cell-${index}`} 
+                                fill={COLORS[index % COLORS.length]} 
+                            />
+                        ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                </PieChart>
+            </ResponsiveContainer>
+        </ChartContainer>
+    )
+
+    const renderMonthlyProgressChart = (data: MonthlyProgressEntry[]) => (
+        <ChartContainer className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Line 
+                        type="monotone" 
+                        dataKey="planned" 
+                        stroke={colors.primary} 
+                        activeDot={{ r: 8 }} 
+                    />
+                    <Line 
+                        type="monotone" 
+                        dataKey="actual" 
+                        stroke={colors.secondary} 
+                        activeDot={{ r: 8 }} 
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+        </ChartContainer>
+    )
+
+    const calculateCompletionRate = (data: ElementCompletionEntry[]): string => {
+        const totalElements = data.reduce((acc, curr) => acc + curr.value, 0)
+        const completedElements = data.find(item => item.status === 'Completed')?.value || 0
+        return ((completedElements / totalElements) * 100).toFixed(1)
+    }
+
+    if (loading || dataLoading) {
         return (
             <div className="flex h-screen items-center justify-center bg-green-50">
                 <div className="text-center">
@@ -72,18 +210,19 @@ export default function ManagerDashboard() {
         )
     }
 
-    if (error) {
+    if (error || fetchError) {
         return (
             <div className="flex h-screen items-center justify-center bg-green-50">
                 <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+                    <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-2" />
                     <div className="text-red-600 text-xl mb-2">Error</div>
-                    <p className="text-black">{error.message}</p>
+                    <p className="text-black">{error?.message || fetchError}</p>
                 </div>
             </div>
         )
     }
 
-    if (!user) {
+    if (!user || !dashboardData) {
         return null
     }
 
@@ -95,7 +234,9 @@ export default function ManagerDashboard() {
                         <CardHeader className="border-b border-green-100">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <CardTitle className="text-3xl font-bold text-black">Manager Dashboard</CardTitle>
+                                    <CardTitle className="text-3xl font-bold text-black">
+                                        Manager Dashboard
+                                    </CardTitle>
                                     <CardDescription className="text-gray-600 text-lg mt-2">
                                         Welcome back, {user.username}!
                                     </CardDescription>
@@ -105,161 +246,55 @@ export default function ManagerDashboard() {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="pt-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
-                                    <h3 className="text-black font-semibold mb-2">Project Reports</h3>
-                                    <p className="text-gray-600">View and analyze all project data</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
-                                    <h3 className="text-black font-semibold mb-2">Employee Management</h3>
-                                    <p className="text-gray-600">Manage team assignments and roles</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg border border-green-200 shadow-sm">
-                                    <h3 className="text-black font-semibold mb-2">Analytics</h3>
-                                    <p className="text-gray-600">Track performance metrics</p>
-                                </div>
-                            </div>
-                        </CardContent>
                     </Card>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <Card className="border-green-200 shadow-lg">
-                            <CardHeader className="border-b border-green-100">
-                                <CardTitle className="text-black">Daily Casting Progress</CardTitle>
-                                <CardDescription className="text-gray-600">Planned vs actual casting amounts</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-6">
-                                <ChartContainer
-                                    className="h-[300px]"
-                                >
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={dailyCastingData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                            <XAxis dataKey="date" stroke="#000000" />
-                                            <YAxis stroke="#000000" />
-                                            <ChartTooltip content={<ChartTooltipContent />} />
-                                            <Legend />
-                                            <Bar dataKey="plannedAmount" fill={colors.primary} name="Planned Amount" />
-                                            <Bar dataKey="actualAmount" fill={colors.secondary} name="Actual Amount" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            </CardContent>
-                        </Card>
+                        <ChartCard
+                            title="Daily Casting Progress"
+                            description="Planned vs actual casting amounts"
+                        >
+                            {renderDailyCastingChart(dashboardData.dailyCastingData)}
+                        </ChartCard>
+
+                        <ChartCard
+                            title="Element Completion"
+                            description="Overall casting progress"
+                        >
+                            {renderElementCompletionChart(dashboardData.elementCompletionData)}
+                        </ChartCard>
+
+                        <ChartCard
+                            title="Monthly Progress"
+                            description="Planned vs Actual progress over months"
+                        >
+                            {renderMonthlyProgressChart(dashboardData.monthlyProgressData)}
+                        </ChartCard>
 
                         <Card className="border-green-200 shadow-lg">
                             <CardHeader className="border-b border-green-100">
-                                <CardTitle className="text-black">Element Completion</CardTitle>
-                                <CardDescription className="text-gray-600">Overall casting progress</CardDescription>
+                                <CardTitle className="text-black">Key Metrics</CardTitle>
+                                <CardDescription className="text-gray-600">
+                                    Summary of important statistics
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                <ChartContainer
-                                    className="h-[300px]"
-                                >
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={elementCompletionData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                outerRadius={80}
-                                                dataKey="value"
-                                            >
-                                                {elementCompletionData.map((entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={index === 0 ? colors.primary : colors.tertiary}
-                                                    />
-                                                ))}
-                                            </Pie>
-                                            <ChartTooltip content={<ChartTooltipContent />} />
-                                            <Legend />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            </CardContent>
-                        </Card>
-                    
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                        {/* Donut Chart for Element Completion Status */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Element Completion Status</CardTitle>
-                                <CardDescription>Overview of element completion in the project</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ChartContainer className="h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={elementCompletionData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                fill="#8884d8"
-                                                paddingAngle={5}
-                                                dataKey="value"
-                                            >
-                                                {elementCompletionData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <ChartTooltip content={<ChartTooltipContent />} />
-                                            <Legend />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            </CardContent>
-                        </Card>
-
-                        {/* Line Chart for Monthly Progress */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Monthly Progress</CardTitle>
-                                <CardDescription>Planned vs Actual progress over months</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ChartContainer className="h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={monthlyProgressData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="month" />
-                                            <YAxis />
-                                            <ChartTooltip content={<ChartTooltipContent />} />
-                                            <Legend />
-                                            <Line type="monotone" dataKey="planned" stroke="#8884d8" activeDot={{ r: 8 }} />
-                                            <Line type="monotone" dataKey="actual" stroke="#82ca9d" />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            </CardContent>
-                        </Card>
-
-
-                        {/* Area Chart for Cumulative Progress */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Cumulative Progress</CardTitle>
-                                <CardDescription>Cumulative planned vs actual progress</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ChartContainer className="h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={monthlyProgressData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="month" />
-                                            <YAxis />
-                                            <ChartTooltip content={<ChartTooltipContent />} />
-                                            <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" />
-                                            <Area type="monotone" dataKey="actual" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-green-50 rounded-lg">
+                                        <p className="text-sm text-gray-600">Total Elements</p>
+                                        <p className="text-2xl font-bold text-black">
+                                            {dashboardData.elementCompletionData.reduce(
+                                                (acc, curr) => acc + curr.value, 
+                                                0
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-green-50 rounded-lg">
+                                        <p className="text-sm text-gray-600">Completion Rate</p>
+                                        <p className="text-2xl font-bold text-black">
+                                            {calculateCompletionRate(dashboardData.elementCompletionData)}%
+                                        </p>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>

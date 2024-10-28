@@ -20,14 +20,35 @@ export default function PlannedEmployeeDashboard() {
 
         return (
             <Layout>
-                <div className="bg-white shadow-md rounded-lg p-6 text-zinc-900">
-                    <h2 className="text-3xl font-extrabold">Planned Employee Dashboard</h2>
-                    <p>Welcome, {user.username}!</p>
-                    <ul className="list-disc space-y-2">
-                        <li>View assigned projects</li>
-                        <li>Submit daily reports</li>
-                        <li>Check project schedules</li>
-                    </ul>
+                <div className="bg-white shadow-lg rounded-xl p-8 border border-green-100">
+                    <div className="border-b border-green-100 pb-6 mb-6">
+                        <h2 className="text-3xl font-extrabold text-green-800">Planned Employee Dashboard</h2>
+                        <p className="text-lg mt-2 text-green-600">Welcome, <span className="font-semibold">{user.username}</span>!</p>
+                    </div>
+                    
+                    <div className="bg-green-50 rounded-lg p-6">
+                        <h3 className="text-xl font-bold text-green-800 mb-4">Quick Actions</h3>
+                        <ul className="space-y-4">
+                            <li className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-green-700 hover:text-green-800 cursor-pointer transition-colors">
+                                    View assigned projects
+                                </span>
+                            </li>
+                            <li className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-green-700 hover:text-green-800 cursor-pointer transition-colors">
+                                    Submit daily reports
+                                </span>
+                            </li>
+                            <li className="flex items-center space-x-3">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-green-700 hover:text-green-800 cursor-pointer transition-colors">
+                                    Check project schedules
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </Layout>
         )

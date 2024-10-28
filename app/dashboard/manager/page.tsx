@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from "recharts"
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, AreaChart, Area, LineChart, Line } from "recharts"
 import React from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Loader2 } from 'lucide-react'
@@ -22,20 +22,20 @@ const dailyCastingData = [
 
 const elementCompletionData = [
     { name: "Completed", value: 65 },
-    { name: "Remaining", value: 35 },
+    { name: "In Progress", value: 25 },
+    { name: "Pending", value: 10 },
 ]
 
-const jobProgressData = [
-    { job: "Job 1", element: "Element A", progress: 80 },
-    { job: "Job 1", element: "Element B", progress: 60 },
-    { job: "Job 1", element: "Element C", progress: 40 },
-    { job: "Job 2", element: "Element A", progress: 90 },
-    { job: "Job 2", element: "Element B", progress: 70 },
-    { job: "Job 2", element: "Element C", progress: 50 },
-    { job: "Job 3", element: "Element A", progress: 100 },
-    { job: "Job 3", element: "Element B", progress: 85 },
-    { job: "Job 3", element: "Element C", progress: 75 },
+const monthlyProgressData = [
+    { month: "Jan", planned: 100, actual: 95 },
+    { month: "Feb", planned: 120, actual: 115 },
+    { month: "Mar", planned: 140, actual: 130 },
+    { month: "Apr", planned: 160, actual: 155 },
+    { month: "May", planned: 180, actual: 175 },
+    { month: "Jun", planned: 200, actual: 190 },
 ]
+
+
 
 // Custom color palette
 const colors = {
@@ -45,6 +45,7 @@ const colors = {
     background: '#f0fdf4', // Green-50
     border: '#BBF7D0', // Green-200
 }
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
 export default function ManagerDashboard() {
     const { user, loading, error } = useAuth()
@@ -167,8 +168,8 @@ export default function ManagerDashboard() {
                                                 dataKey="value"
                                             >
                                                 {elementCompletionData.map((entry, index) => (
-                                                    <Cell 
-                                                        key={`cell-${index}`} 
+                                                    <Cell
+                                                        key={`cell-${index}`}
                                                         fill={index === 0 ? colors.primary : colors.tertiary}
                                                     />
                                                 ))}
@@ -180,41 +181,84 @@ export default function ManagerDashboard() {
                                 </ChartContainer>
                             </CardContent>
                         </Card>
+                    
+                    </div>
 
-                        <Card className="md:col-span-2 border-green-200 shadow-lg">
-                            <CardHeader className="border-b border-green-100">
-                                <CardTitle className="text-black">Job Progress Heatmap</CardTitle>
-                                <CardDescription className="text-gray-600">Element progress across jobs</CardDescription>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                        {/* Donut Chart for Element Completion Status */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Element Completion Status</CardTitle>
+                                <CardDescription>Overview of element completion in the project</CardDescription>
                             </CardHeader>
-                            <CardContent className="pt-6">
+                            <CardContent>
                                 <ChartContainer className="h-[300px]">
-                                    <div className="grid grid-cols-4 gap-1">
-                                        <div></div>
-                                        {Array.from(new Set(jobProgressData.map(d => d.element))).map(element => (
-                                            <div key={element} className="text-center font-semibold text-black">{element}</div>
-                                        ))}
-                                        {Array.from(new Set(jobProgressData.map(d => d.job))).map(job => (
-                                            <React.Fragment key={job}>
-                                                <div className="font-semibold text-black">{job}</div>
-                                                {Array.from(new Set(jobProgressData.map(d => d.element))).map(element => {
-                                                    const cellData = jobProgressData.find(d => d.job === job && d.element === element)
-                                                    const progress = cellData ? cellData.progress : 0
-                                                    const backgroundColor = `hsl(142, ${progress}%, ${80 - progress * 0.3}%)`
-                                                    return (
-                                                        <div
-                                                            key={`${job}-${element}`}
-                                                            style={{ backgroundColor }}
-                                                            className="h-12 rounded-md flex items-center justify-center font-bold shadow-sm"
-                                                        >
-                                                            <span className={progress > 50 ? 'text-white' : 'text-black'}>
-                                                                {progress}%
-                                                            </span>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </React.Fragment>
-                                        ))}
-                                    </div>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={elementCompletionData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                fill="#8884d8"
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {elementCompletionData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <ChartTooltip content={<ChartTooltipContent />} />
+                                            <Legend />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </ChartContainer>
+                            </CardContent>
+                        </Card>
+
+                        {/* Line Chart for Monthly Progress */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Monthly Progress</CardTitle>
+                                <CardDescription>Planned vs Actual progress over months</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ChartContainer className="h-[300px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={monthlyProgressData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="month" />
+                                            <YAxis />
+                                            <ChartTooltip content={<ChartTooltipContent />} />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="planned" stroke="#8884d8" activeDot={{ r: 8 }} />
+                                            <Line type="monotone" dataKey="actual" stroke="#82ca9d" />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </ChartContainer>
+                            </CardContent>
+                        </Card>
+
+
+                        {/* Area Chart for Cumulative Progress */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Cumulative Progress</CardTitle>
+                                <CardDescription>Cumulative planned vs actual progress</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ChartContainer className="h-[300px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={monthlyProgressData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="month" />
+                                            <YAxis />
+                                            <ChartTooltip content={<ChartTooltipContent />} />
+                                            <Area type="monotone" dataKey="planned" stackId="1" stroke="#8884d8" fill="#8884d8" />
+                                            <Area type="monotone" dataKey="actual" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </ChartContainer>
                             </CardContent>
                         </Card>

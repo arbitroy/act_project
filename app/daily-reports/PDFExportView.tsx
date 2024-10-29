@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from "@/components/ui/card";
+import Image from 'next/image'
 
 interface DailyReport {
     id: string | number;
@@ -20,7 +21,7 @@ interface PDFExportViewProps {
 }
 
 const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
-    // Helper function to safely convert to number and handle potential invalid inputs
+    // [Previous helper functions remain the same]
     const safeNumber = (value: string | number | null | undefined): number => {
         if (value === null || value === undefined || value === '') return 0;
         const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -51,6 +52,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
         return reports.reduce((sum, report) =>
             sum + (safeNumber(report.planned_volume) * safeNumber(report.planned_amount)), 0);
     };
+
     const calculateAlreadyCasted = (reports: DailyReport[]): number => {
         return reports.reduce((sum, report) => sum + safeNumber(report.already_casted), 0);
     };
@@ -58,6 +60,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
     const calculateRemainingQuantity = (reports: DailyReport[]): number => {
         return reports.reduce((sum, report) => sum + safeNumber(report.remaining_qty), 0);
     };
+
     const today = new Date();
     const totalAlreadyCasted = calculateAlreadyCasted(dailyReports);
     const totalRemainingQuantity = calculateRemainingQuantity(dailyReports);
@@ -67,89 +70,92 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
     const totalPlannedVolume = calculateTotalPlannedVolume(dailyReports);
 
     return (
-        <Card className="p-8 w-full">
+        <Card className="p-8 w-full bg-white shadow-lg">
             <div className="space-y-6">
                 {/* Header */}
-                <div className="text-center space-y-2">
-                    <h1 className="text-xl font-bold">TECH DEPARTMENT</h1>
-                    <div className="text-sm">
-                        <p>ACT- IMS- FORM</p>
-                        <p>FM PR-001</p>
-                        <p>0</p>
-                        <p>{formatDate(today)}</p>
+                <div className="flex items-center bg-green-100 p-4 rounded-lg border-l-4 border-green-600">
+                    <Image priority src='/act-precast-logo.svg' alt="ACT PRECAST" width={100} height={150} className="rounded-full aspect-square object-cover" />
+                    <div className="ml-4 flex-1">
+                        <h1 className="text-xl font-bold text-black border-b-2 border-green-600 pb-2 mb-2">TECH DEPARTMENT</h1>
+                        <div className="text-sm text-black grid grid-cols-2 gap-x-8 gap-y-1">
+                            <p>ACT- IMS- FORM</p>
+                            <p>FM PR-001</p>
+                            <p>Rev. 0</p>
+                            <p>{formatDate(today)}</p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto border border-green-300 rounded-lg">
                     <table className="w-full text-sm border-collapse">
                         <thead>
-                            <tr className="border">
-                                <th className="border p-2 text-left">S/N</th>
-                                <th className="border p-2 text-left">Job No</th>
-                                <th className="border p-2 text-left">Table No</th>
-                                <th className="border p-2 text-left">Element ID</th>
-                                <th className="border p-2 text-right">Already Casted (nos)</th>
-                                <th className="border p-2 text-right">Remaining Qty (nos)</th>
-                                <th className="border p-2 text-right">Vol</th>
-                                <th className="border p-2 text-right">Weight</th>
-                                <th className="border p-2 text-right">Planned to Cast (nos)</th>
-                                <th className="border p-2 text-right">Planned Volume (m3)</th>
-                                <th className="border p-2 text-center">MEP</th>
-                                <th className="border p-2 text-left">Remarks</th>
+                            <tr className="bg-green-600">
+                                <th className="border-b border-green-400 p-3 text-left text-white font-semibold">S/N</th>
+                                <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Job No</th>
+                                <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Table No</th>
+                                <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Element ID</th>
+                                <th className="border-b border-green-400 p-3 text-right text-white font-semibold">Already Casted (nos)</th>
+                                <th className="border-b border-green-400 p-3 text-right text-white font-semibold">Remaining Qty (nos)</th>
+                                <th className="border-b border-green-400 p-3 text-right text-white font-semibold">Vol</th>
+                                <th className="border-b border-green-400 p-3 text-right text-white font-semibold">Weight</th>
+                                <th className="border-b border-green-400 p-3 text-right text-white font-semibold">Planned to Cast (nos)</th>
+                                <th className="border-b border-green-400 p-3 text-right text-white font-semibold">Planned Volume (m3)</th>
+                                <th className="border-b border-green-400 p-3 text-center text-white font-semibold">MEP</th>
+                                <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
                             {dailyReports.map((report, index) => (
-                                <tr key={report.id} className="border hover:bg-gray-50">
-                                    <td className="border p-2">{index + 1}</td>
-                                    <td className="border p-2">{report.job_number}</td>
-                                    <td className="border p-2">{report.table_number}</td>
-                                    <td className="border p-2">{report.element_code}</td>
-                                    <td className="border p-2 text-right">
+                                <tr key={report.id} className="hover:bg-green-50 transition-colors">
+                                    <td className="border-b border-green-200 p-3 text-black">{index + 1}</td>
+                                    <td className="border-b border-green-200 p-3 text-black">{report.job_number}</td>
+                                    <td className="border-b border-green-200 p-3 text-black">{report.table_number}</td>
+                                    <td className="border-b border-green-200 p-3 text-black">{report.element_code}</td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
                                         {safeNumber(report.already_casted)}
                                     </td>
-                                    <td className="border p-2 text-right">
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
                                         {safeNumber(report.remaining_qty)}
                                     </td>
-                                    <td className="border p-2 text-right">
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
                                         {safeNumber(report.planned_volume).toFixed(2)}
                                     </td>
-                                    <td className="border p-2 text-right">
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
                                         {(safeNumber(report.planned_volume) * 2.5).toFixed(3)}
                                     </td>
-                                    <td className="border p-2 text-right">
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
                                         {safeNumber(report.planned_amount)}
                                     </td>
-                                    <td className="border p-2 text-right">
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
                                         {(safeNumber(report.planned_volume) * safeNumber(report.planned_amount)).toFixed(2)}
                                     </td>
-                                    <td className="border p-2 text-center">{report.mep}</td>
-                                    <td className="border p-2">{report.remarks}</td>
+                                    <td className="border-b border-green-200 p-3 text-center text-black">{report.mep}</td>
+                                    <td className="border-b border-green-200 p-3 text-black">{report.remarks}</td>
                                 </tr>
                             ))}
                             {/* Grand Total Row */}
-                            <tr className="border font-bold bg-gray-50">
-                                <td colSpan={4} className="border p-2 text-right">GRAND TOTAL</td>
-                                <td className="border p-2 text-right">
+                            <tr className="bg-green-600 font-bold">
+                                <td colSpan={4} className="p-3 text-right text-white">GRAND TOTAL</td>
+                                <td className="p-3 text-right text-white">
                                     {totalAlreadyCasted.toFixed(2)}
                                 </td>
-                                <td className="border p-2 text-right">
+                                <td className="p-3 text-right text-white">
                                     {totalRemainingQuantity.toFixed(2)}
                                 </td>
-                                <td className="border p-2 text-right">
+                                <td className="p-3 text-right text-white">
                                     {totalVolume.toFixed(2)}
                                 </td>
-                                <td className="border p-2 text-right">
+                                <td className="p-3 text-right text-white">
                                     {totalWeight.toFixed(3)}
                                 </td>
-                                <td className="border p-2 text-right">
+                                <td className="p-3 text-right text-white">
                                     {totalPlannedAmount}
                                 </td>
-                                <td className="border p-2 text-right">
+                                <td className="p-3 text-right text-white">
                                     {totalPlannedVolume.toFixed(2)}
                                 </td>
-                                <td colSpan={2} className="border p-2"></td>
+                                <td colSpan={2} className="p-3"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -159,11 +165,11 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                 <div className="mt-8 space-y-4">
                     <div className="flex justify-between">
                         <div>
-                            <p className="font-bold">Issued by:</p>
-                            <div className="mt-8 border-t border-black w-32"></div>
+                            <p className="font-bold text-black">Issued by:</p>
+                            <div className="mt-8 border-t-2 border-green-600 w-32"></div>
                         </div>
                     </div>
-                    <div className="text-sm">
+                    <div className="text-sm text-black bg-green-100 p-4 rounded-lg space-y-1 border-l-4 border-green-600">
                         <p>Document Code</p>
                         <p>Document S No.</p>
                         <p>Rev. No</p>

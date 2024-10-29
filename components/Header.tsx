@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogOut } from 'lucide-react'
+import { LogOut, Home } from 'lucide-react'
 import type { UseAuthReturn } from '@/hooks/useAuth'
 import Image from 'next/image'
 
@@ -31,6 +31,9 @@ export default function Header({ auth }: HeaderProps) {
     const handleLogout = async () => {
         await logout()
         router.push('/login')
+    }
+    const handleHome = async () => {
+        router.push('/')
     }
 
     return (
@@ -62,6 +65,10 @@ export default function Header({ auth }: HeaderProps) {
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={handleHome}>
+                                        <Home className="mr-2 h-4 w-4" />
+                                        <span>Home</span>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={handleLogout}>
                                         <LogOut className="mr-2 h-4 w-4" />
                                         <span>Log out</span>

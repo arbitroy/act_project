@@ -24,8 +24,8 @@ export default function Sidebar({ auth }: SidebarProps) {
     return (
         <div className="bg-gray-800 text-white w-64 space-y-6 py-7 px-4 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out">
             <div className="flex items-center space-x-2 mb-6">
-                <Button variant="ghost" className="h-10 w-10 rounded-full">
-                    <Image priority src='/act-precast-logo.svg' alt="ACT PRECAST" width={500} height={500}/>
+                <Button variant="ghost">
+                    <Image priority src='/act-precast-logo.svg' alt="ACT PRECAST" width={50} height={50} className="rounded-full aspect-square object-cover"/>
                 </Button>
                 <h2 className="text-2xl font-bold">ACT Precast</h2>
             </div>

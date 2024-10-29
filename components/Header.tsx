@@ -3,10 +3,11 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogOut} from 'lucide-react'
-import type { UseAuthReturn } from '@/hooks/useAuth' // You'll need to create this type
+import { LogOut } from 'lucide-react'
+import type { UseAuthReturn } from '@/hooks/useAuth'
+import Image from 'next/image'
 
 interface HeaderProps {
     auth: UseAuthReturn
@@ -36,7 +37,8 @@ export default function Header({ auth }: HeaderProps) {
         <header className="bg-green-700 text-white shadow-md">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center py-4">
-                    <div className="flex items-center">
+                    <div className="flex space-x-2 items-center">
+                        <Image priority src='/act-precast-logo.svg' alt="ACT PRECAST" width={50} height={50} className="rounded-full aspect-square object-cover" />
                         <Link href="/dashboard" className="font-bold text-xl text-white hover:text-green-200 transition-colors">
                             ACT Precast
                         </Link>

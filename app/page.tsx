@@ -2,13 +2,17 @@ import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ClipboardList, BarChart, Users, Zap } from 'lucide-react'
+import Image from 'next/image'
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-green-50">
       <header className="bg-green-600 text-white shadow-md">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div className="text-2xl font-bold">ACT Precast</div>
+          <div className="flex space-x-3 items-center">
+            <Image priority src='/act-precast-logo.svg' alt="ACT PRECAST" width={50} height={50} className="rounded-full aspect-square object-cover" />
+            <div className="text-2xl font-bold">ACT Precast</div>
+          </div>
           <nav>
             <ul className="flex space-x-4">
               <li><a href="#features" className="hover:text-green-200 transition-colors">Features</a></li>

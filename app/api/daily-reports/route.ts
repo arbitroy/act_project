@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const result = await queryWithRetry(
-            'INSERT INTO dailyreports ( ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            'INSERT INTO dailyreports (date, user_id, job_id, table_id, element_id, mep, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [date, user_id, job_id, table_id, element_id, mep, remarks]
         )
 

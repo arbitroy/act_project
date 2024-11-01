@@ -27,7 +27,7 @@ export default async function MasterDataManagement() {
         return (
             <Layout>
                 <div className="bg-white shadow-md rounded-lg p-6">
-                    <h2 className="text-2xl font-bold mb-4">Master Data Management</h2>
+                    <h2 className="text-2xl font-bold mb-4 text-black">Master Data Management</h2>
                     <MasterDataTabs />
                 </div>
             </Layout>

@@ -338,6 +338,7 @@ export default function DailyReportListView() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-gray-50">
+                                            <TableHead>S/N</TableHead>
                                             <TableHead>Date</TableHead>
                                             <TableHead>Job No.</TableHead>
                                             <TableHead>Table No.</TableHead>
@@ -375,6 +376,7 @@ export default function DailyReportListView() {
                                         ) : (
                                             dailyReports.map((report, index) => (
                                                 <TableRow key={`${report.id}-${index}`} className="hover:bg-gray-50">
+                                                    <TableCell>{report.id}</TableCell>
                                                     <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
                                                     <TableCell>{report.job_number}</TableCell>
                                                     <TableCell>{report.table_number}</TableCell>

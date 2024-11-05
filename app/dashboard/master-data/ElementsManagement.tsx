@@ -6,23 +6,47 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Switch } from "@/components/ui/switch"
+import { toast } from "@/components/ui/use-toast"
 
 interface Element {
     element_id: string;
     volume: string;
     weight: string;
+    status: 'active' | 'inactive';
+}
+
+interface ApiError {
+    error: string;
+    message: string;
+}
+
+const isApiError = (error: unknown): error is ApiError => {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'error' in error &&
+        'message' in error
+    )
 }
 
 const WEIGHT_MULTIPLIER = 2.5;
 
 export default function ElementsManagement() {
     const [elements, setElements] = useState<Element[]>([])
-    const [newElement, setNewElement] = useState<Element>({ element_id: '', volume: '0', weight: '0' })
+    const [newElement, setNewElement] = useState<Omit<Element, 'status'>>({ 
+        element_id: '', 
+        volume: '0', 
+        weight: '0' 
+    })
     const [editingElement, setEditingElement] = useState<Element | null>(null)
+    const [showInactive, setShowInactive] = useState(false)
+    const [elementToDelete, setElementToDelete] = useState<string | null>(null)
 
     // Calculate weight based on volume
     const calculateWeight = (volume: string): string => {
-        const numericVolume = parseFloat(volume);
+        const numericVolume = parseFloat(volume || '0');
         return (numericVolume * WEIGHT_MULTIPLIER).toFixed(2);
     };
 
@@ -48,75 +72,196 @@ export default function ElementsManagement() {
         }
     };
 
+
     const fetchElements = useCallback(async () => {
         try {
-            const response = await fetch('/api/elements', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            if (response.ok) {
-                const data = await response.json()
-                setElements(data)
-            } else {
-                console.error('Failed to fetch elements:', response.statusText)
+            const response = await fetch(`/api/elements${showInactive ? '?includeInactive=true' : ''}`)
+            if (!response.ok) {
+                const error: ApiError = await response.json()
+                throw new Error(error.message || 'Failed to fetch elements')
             }
+            const data = await response.json()
+            setElements(data)
         } catch (error) {
-            console.error('Error fetching elements:', error)
+            const message = error instanceof Error 
+                ? error.message 
+                : 'An unexpected error occurred while fetching elements'
+            
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: message,
+            })
         }
-    }, [])
+    }, [showInactive])
 
     useEffect(() => {
         fetchElements()
     }, [fetchElements])
 
+
     const handleCreate = async () => {
-        const response = await fetch('/api/elements', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newElement),
-        })
-        if (response.ok) {
+        try {
+            const response = await fetch('/api/elements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newElement),
+            })
+            
+            const data = await response.json()
+            
+            if (!response.ok) {
+                throw new Error(isApiError(data) ? data.message : 'Failed to create element')
+            }
+
             setNewElement({ element_id: '', volume: '0', weight: '0' })
-            fetchElements()
+            await fetchElements()
+            toast({
+                title: "Success",
+                description: "Element created successfully.",
+            })
+        } catch (error) {
+            const message = error instanceof Error 
+                ? error.message 
+                : 'An unexpected error occurred while creating the element'
+            
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: message,
+            })
         }
     }
 
     const handleUpdate = async () => {
         if (!editingElement) return
-        const response = await fetch('/api/elements', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(editingElement),
-        })
-        if (response.ok) {
+        
+        try {
+            const response = await fetch('/api/elements', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    element_id: editingElement.element_id,
+                    volume: editingElement.volume,
+                    weight: editingElement.weight
+                }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(isApiError(data) ? data.message : 'Failed to update element')
+            }
+
             setEditingElement(null)
-            fetchElements()
+            await fetchElements()
+            toast({
+                title: "Success",
+                description: "Element updated successfully.",
+            })
+        } catch (error) {
+            const message = error instanceof Error 
+                ? error.message 
+                : 'An unexpected error occurred while updating the element'
+            
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: message,
+            })
         }
     }
 
-    const handleDelete = async (element_id: string) => {
-        const response = await fetch('/api/elements', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ element_id }),
-        })
-        if (response.ok) {
-            fetchElements()
+    const handleDelete = async () => {
+        if (!elementToDelete) return
+        
+        try {
+            const response = await fetch('/api/elements', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ element_id: elementToDelete }),
+            })
+            
+            const data = await response.json()
+            
+            if (!response.ok) {
+                throw new Error(isApiError(data) ? data.message : 'Failed to deactivate element')
+            }
+
+            await fetchElements()
+            toast({
+                title: "Success",
+                description: "Element deactivated successfully.",
+            })
+        } catch (error) {
+            const message = error instanceof Error 
+                ? error.message 
+                : 'An unexpected error occurred while deactivating the element'
+            
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: message,
+            })
+        } finally {
+            setElementToDelete(null)
+        }
+    }
+
+    const handleRestore = async (elementId: string) => {
+        try {
+            const response = await fetch('/api/elements', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ element_id: elementId }),
+            })
+            
+            const data = await response.json()
+            
+            if (!response.ok) {
+                throw new Error(isApiError(data) ? data.message : 'Failed to restore element')
+            }
+
+            await fetchElements()
+            toast({
+                title: "Success",
+                description: "Element restored successfully.",
+            })
+        } catch (error) {
+            const message = error instanceof Error 
+                ? error.message 
+                : 'An unexpected error occurred while restoring the element'
+            
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: message,
+            })
         }
     }
 
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle className="text-lg font-semibold">Elements Management</CardTitle>
+                <div className="flex justify-between items-center">
+                    <CardTitle className="text-lg font-semibold">Elements Management</CardTitle>
+                    <div className="flex items-center space-x-2">
+                        <Switch
+                            checked={showInactive}
+                            onCheckedChange={setShowInactive}
+                            id="show-inactive"
+                        />
+                        <Label htmlFor="show-inactive">Show Inactive Elements</Label>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                 {/* Creation Form */}
@@ -190,15 +335,19 @@ export default function ElementsManagement() {
                                 <TableHead className="font-semibold">Element ID</TableHead>
                                 <TableHead className="font-semibold">Volume (m³)</TableHead>
                                 <TableHead className="font-semibold">Weight (T)</TableHead>
+                                <TableHead className="font-semibold">Status</TableHead>
                                 <TableHead className="font-semibold">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {elements.map((element) => (
-                                <TableRow key={element.element_id}>
+                                <TableRow 
+                                    key={element.element_id}
+                                    className={element.status === 'inactive' ? 'bg-gray-50' : ''}
+                                >
                                     <TableCell>{element.element_id}</TableCell>
                                     <TableCell>
-                                        {editingElement && editingElement?.element_id === element.element_id ? (
+                                        {editingElement?.element_id === element.element_id ? (
                                             <div className="space-y-1">
                                                 <Label htmlFor={`edit-volume-${element.element_id}`} className="sr-only">
                                                     Volume (m³)
@@ -216,7 +365,7 @@ export default function ElementsManagement() {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        {editingElement && editingElement?.element_id === element.element_id ? (
+                                        {editingElement?.element_id === element.element_id ? (
                                             <div className="space-y-1">
                                                 <Label htmlFor={`edit-weight-${element.element_id}`} className="sr-only">
                                                     Weight (T)
@@ -234,28 +383,44 @@ export default function ElementsManagement() {
                                         )}
                                     </TableCell>
                                     <TableCell>
+                                        <span className={element.status === 'inactive' ? 'text-gray-500' : ''}>
+                                            {element.status}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell>
                                         <div className="flex space-x-2">
-                                            {editingElement && editingElement?.element_id === element.element_id ? (
-                                                <Button 
-                                                    onClick={handleUpdate} 
-                                                    className="bg-green-600 hover:bg-green-700"
-                                                >
-                                                    Save
-                                                </Button>
+                                            {element.status === 'active' ? (
+                                                <>
+                                                    {editingElement?.element_id === element.element_id ? (
+                                                        <Button 
+                                                            onClick={handleUpdate} 
+                                                            className="bg-green-600 hover:bg-green-700"
+                                                        >
+                                                            Save
+                                                        </Button>
+                                                    ) : (
+                                                        <Button 
+                                                            onClick={() => setEditingElement(element)} 
+                                                            className="bg-blue-600 hover:bg-blue-700"
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                    )}
+                                                    <Button 
+                                                        className="bg-red-600 hover:bg-red-700"
+                                                        onClick={() => setElementToDelete(element.element_id)}
+                                                    >
+                                                        Deactivate
+                                                    </Button>
+                                                </>
                                             ) : (
                                                 <Button 
-                                                    onClick={() => setEditingElement(element)} 
-                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                    className="bg-green-600 hover:bg-green-700"
+                                                    onClick={() => handleRestore(element.element_id)}
                                                 >
-                                                    Edit
+                                                    Restore
                                                 </Button>
                                             )}
-                                            <Button 
-                                                className="bg-red-600 hover:bg-red-700" 
-                                                onClick={() => handleDelete(element.element_id)}
-                                            >
-                                                Delete
-                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -263,6 +428,24 @@ export default function ElementsManagement() {
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Deactivation Confirmation Dialog */}
+                <AlertDialog open={!!elementToDelete} onOpenChange={(open) => !open && setElementToDelete(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Deactivation</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to deactivate this element? The element will be marked as inactive but can be restored later.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete}>
+                                Deactivate
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </CardContent>
         </Card>
     )

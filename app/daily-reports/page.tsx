@@ -22,10 +22,14 @@ interface DailyReport {
     job_number: string
     table_number: string
     element_code: string
-    already_casted: string | number
-    remaining_qty: string | number
-    planned_volume: number | null
-    planned_amount: number | null
+    element_volume: number
+    already_casted: number
+    already_casted_volume: number
+    remaining_qty: number
+    planned_volume: number
+    planned_amount: number
+    actual_casted: number
+    actual_volume: number
     mep: string
     remarks: string
     status: string
@@ -334,7 +338,7 @@ export default function DailyReportListView() {
                                 </div>
                             )}
 
-                            <div className="rounded-lg border shadow-sm overflow-x-auto">
+<div className="rounded-lg border shadow-sm overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-gray-50">
@@ -343,10 +347,17 @@ export default function DailyReportListView() {
                                             <TableHead>Job No.</TableHead>
                                             <TableHead>Table No.</TableHead>
                                             <TableHead>Element ID</TableHead>
-                                            <TableHead>Already Casted (nos)</TableHead>
-                                            <TableHead>Remaining Qty (nos)</TableHead>
-                                            <TableHead className="text-right">Planned Amount</TableHead>
-                                            <TableHead className="text-right">Planned Volume</TableHead>
+                                            <TableHead className="text-right">Already Casted (nos)</TableHead>
+                                            <TableHead className="text-right">Already Volume (m3)</TableHead>
+                                            <TableHead className="text-right">Remaining Qty (nos)</TableHead>
+                                            <TableHead className="text-right">Total Required</TableHead>
+                                            <TableHead className="text-right">Vol m3</TableHead>
+                                            <TableHead className="text-right">Total Vol m3</TableHead>
+                                            <TableHead className="text-right">Weight</TableHead>
+                                            <TableHead className="text-right">Planned to Cast (nos)</TableHead>
+                                            <TableHead className="text-right">Planned Volume (m3)</TableHead>
+                                            <TableHead className="text-right">Actual Casted (nos)</TableHead>
+                                            <TableHead className="text-right">Actual Volume (m3)</TableHead>
                                             <TableHead>MEP</TableHead>
                                             <TableHead>Remarks</TableHead>
                                             <TableHead>Status</TableHead>
@@ -357,7 +368,7 @@ export default function DailyReportListView() {
                                         {isLoading ? (
                                             [...Array(5)].map((_, i) => (
                                                 <TableRow key={`loading-row-${i}`}>
-                                                    {[...Array(9)].map((_, j) => (
+                                                    {[...Array(20)].map((_, j) => (
                                                         <TableCell key={`loading-cell-${i}-${j}`}>
                                                             <div className="h-4 bg-gray-100 rounded w-24 animate-pulse"></div>
                                                         </TableCell>
@@ -366,7 +377,7 @@ export default function DailyReportListView() {
                                             ))
                                         ) : dailyReports.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={9} className="text-center py-8">
+                                                <TableCell colSpan={20} className="text-center py-8">
                                                     <div className="flex flex-col items-center gap-2">
                                                         <Filter className="h-8 w-8 text-gray-400" />
                                                         <p className="text-gray-500">No reports found for the selected date</p>
@@ -385,13 +396,32 @@ export default function DailyReportListView() {
                                                         {formatNumber(report.already_casted)}
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.already_casted_volume)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
                                                         {formatNumber(report.remaining_qty)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">50</TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.element_volume)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(50 * report.element_volume)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.element_volume * 2.5)}
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono">
                                                         {formatNumber(report.planned_amount)}
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono">
                                                         {formatNumber(report.planned_volume)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.actual_casted)}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono">
+                                                        {formatNumber(report.actual_volume)}
                                                     </TableCell>
                                                     <TableCell>{report.mep}</TableCell>
                                                     <TableCell>

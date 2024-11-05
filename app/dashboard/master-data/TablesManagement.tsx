@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 
 
@@ -99,55 +101,116 @@ export default function TablesManagement() {
 
 
     return (
-        <div>
-            <h3 className="text-lg font-semibold mb-4">Tables Management</h3>
-            <div className="flex gap-4 mb-4">
-                <Input
-                    placeholder="Table No"
-                    value={newTable.table_number}
-                    onChange={(e) => setNewTable({ ...newTable, table_number: e.target.value })}
-                />
-                <Input
-                    placeholder="Description"
-                    value={newTable.description}
-                    onChange={(e) => setNewTable({ ...newTable, description: e.target.value })}
-                />
-                <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">Add Table</Button>
-            </div>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Table No</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {tables.map((table) => table && (
-                        <TableRow key={table.table_number}>
-                            <TableCell>{table.table_number}</TableCell>
-                            <TableCell>
-                                {editingTable && editingTable?.table_number === table.table_number ? (
-                                    <Input
-                                        value={editingTable.description}
-                                        onChange={(e) => setEditingTable({ ...editingTable, description: e.target.value })}
-                                    />
-                                ) : (
-                                    table.description
-                                )}
-                            </TableCell>
-                            <TableCell>
-                                {editingTable && editingTable?.table_number === table.table_number ? (
-                                    <Button onClick={handleUpdate} className="bg-green-600 hover:bg-green-700 mr-2">Save</Button>
-                                ) : (
-                                    <Button onClick={() => setEditingTable(table)} className="bg-blue-600 hover:bg-blue-700 mr-2">Edit</Button>
-                                )}
-                                <Button className="bg-red-600 hover:bg-red-700 mr-2" onClick={() => handleDelete(table.table_number)}>Delete</Button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </div>
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle className="text-lg font-semibold">Tables Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {/* Creation Form */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-gray-50 p-4 rounded-lg">
+                    <div className="space-y-2">
+                        <Label htmlFor="table-number" className="text-sm font-medium text-gray-700">
+                            Table Number
+                        </Label>
+                        <Input
+                            id="table-number"
+                            placeholder="Enter Table Number"
+                            value={newTable.table_number}
+                            onChange={(e) => setNewTable({ ...newTable, table_number: e.target.value })}
+                            className="w-full"
+                        />
+                        <p className="text-xs text-gray-500">
+                            Unique identifier for the table
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                            Description
+                        </Label>
+                        <Input
+                            id="description"
+                            placeholder="Enter table description"
+                            value={newTable.description}
+                            onChange={(e) => setNewTable({ ...newTable, description: e.target.value })}
+                            className="w-full"
+                        />
+                        <p className="text-xs text-gray-500">
+                            Brief description of the table
+                        </p>
+                    </div>
+
+                    <div className="md:col-span-2 flex justify-end">
+                        <Button
+                            onClick={handleCreate}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            Add Table
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Tables List */}
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="font-semibold">Table Number</TableHead>
+                                <TableHead className="font-semibold">Description</TableHead>
+                                <TableHead className="font-semibold">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {tables.map((table) => table && (
+                                <TableRow key={table.table_number}>
+                                    <TableCell>{table.table_number}</TableCell>
+                                    <TableCell>
+                                        {editingTable && editingTable.table_number === table.table_number ? (
+                                            <div className="space-y-1">
+                                                <Label htmlFor={`edit-description-${table.table_number}`} className="sr-only">
+                                                    Description
+                                                </Label>
+                                                <Input
+                                                    id={`edit-description-${table.table_number}`}
+                                                    value={editingTable.description}
+                                                    onChange={(e) => setEditingTable({ ...editingTable, description: e.target.value })}
+                                                />
+                                            </div>
+                                        ) : (
+                                            table.description
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex space-x-2">
+                                            {editingTable && editingTable.table_number === table.table_number ? (
+                                                <Button
+                                                    onClick={handleUpdate}
+                                                    className="bg-green-600 hover:bg-green-700"
+                                                >
+                                                    Save
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    onClick={() => setEditingTable(table)}
+                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                >
+                                                    Edit
+                                                </Button>
+                                            )}
+                                            <Button
+                                                className="bg-red-600 hover:bg-red-700"
+                                                onClick={() => handleDelete(table.table_number)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
     )
 }

@@ -7,14 +7,14 @@ interface DailyReport {
     job_number: string;
     table_number: string;
     element_code: string;
-    element_volume: number;
-    already_casted: number;
-    already_casted_volume: number;
-    remaining_qty: number;
-    planned_volume: number;
-    planned_amount: number;
-    actual_casted: number;
-    actual_volume: number;
+    element_volume: string | number;
+    already_casted: string | number;
+    already_casted_volume: string | number;
+    remaining_qty: string | number;
+    planned_volume: string | number | null;
+    planned_amount: string | number | null;
+    actual_casted: string | number;
+    actual_volume: string | number;
     mep: string;
     remarks?: string;
 }
@@ -28,7 +28,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
         if (value === null || value === undefined || value === '') return 0;
         const num = typeof value === 'string' ? parseFloat(value) : value;
         return isNaN(num) ? 0 : num;
-    };;
+    };
 
     const formatDate = (date: Date): string => {
         return date.toLocaleDateString('en-GB', {
@@ -43,7 +43,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
             alreadyCasted: acc.alreadyCasted + safeNumber(report.already_casted),
             alreadyCastedVolume: acc.alreadyCastedVolume + safeNumber(report.already_casted_volume),
             remainingQty: acc.remainingQty + safeNumber(report.remaining_qty),
-            totalVolume: acc.totalVolume + (50 * safeNumber(report.element_volume)), // 50 is Total Required
+            totalVolume: acc.totalVolume + (50 * safeNumber(report.element_volume)),
             plannedAmount: acc.plannedAmount + safeNumber(report.planned_amount),
             plannedVolume: acc.plannedVolume + safeNumber(report.planned_volume),
             actualCasted: acc.actualCasted + safeNumber(report.actual_casted),
@@ -62,9 +62,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
 
     const totals = calculateTotals();
     const today = new Date();
-    const formatNumber = (value: string | number | null | undefined) => {
-        return safeNumber(value).toFixed(2);
-    };
+
 
     return (
         <Card className="p-8 w-full bg-white shadow-lg print:shadow-none">
@@ -117,17 +115,37 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                                     <td className="border-b border-green-200 p-3 text-black">{report.job_number}</td>
                                     <td className="border-b border-green-200 p-3 text-black">{report.table_number}</td>
                                     <td className="border-b border-green-200 p-3 text-black">{report.element_code}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.already_casted.toFixed(2)}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.already_casted_volume.toFixed(2)}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.remaining_qty.toFixed(2)}</td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.already_casted).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.already_casted_volume).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.remaining_qty).toFixed(2)}
+                                    </td>
                                     <td className="border-b border-green-200 p-3 text-right text-black">50</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.element_volume.toFixed(2)}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{(50 * report.element_volume).toFixed(2)}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{(report.element_volume * 2.5).toFixed(3)}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.planned_amount}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.planned_volume.toFixed(2)}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.actual_casted}</td>
-                                    <td className="border-b border-green-200 p-3 text-right text-black">{report.actual_volume.toFixed(2)}</td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.element_volume).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {(safeNumber(report.element_volume) * 50).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {(safeNumber(report.element_volume) * 2.5).toFixed(3)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.planned_amount).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.planned_volume).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.actual_casted).toFixed(2)}
+                                    </td>
+                                    <td className="border-b border-green-200 p-3 text-right text-black">
+                                        {safeNumber(report.actual_volume).toFixed(2)}
+                                    </td>
                                     <td className="border-b border-green-200 p-3 text-center text-black">{report.mep}</td>
                                     <td className="border-b border-green-200 p-3 text-black">{report.remarks}</td>
                                 </tr>
@@ -142,15 +160,16 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                                 <td className="p-3 text-right text-white">-</td>
                                 <td className="p-3 text-right text-white">{totals.totalVolume.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{(totals.totalVolume * 2.5).toFixed(3)}</td>
-                                <td className="p-3 text-right text-white">{totals.plannedAmount}</td>
+                                <td className="p-3 text-right text-white">{totals.plannedAmount.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{totals.plannedVolume.toFixed(2)}</td>
-                                <td className="p-3 text-right text-white">{totals.actualCasted}</td>
+                                <td className="p-3 text-right text-white">{totals.actualCasted.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{totals.actualVolume.toFixed(2)}</td>
                                 <td colSpan={2} className="p-3"></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+
 
                 {/* Footer */}
                 <div className="mt-8 space-y-4">

@@ -179,6 +179,7 @@ export default function DailyReportListView() {
                                 body {
                                     -webkit-print-color-adjust: exact !important;
                                     print-color-adjust: exact !important;
+                                    color-adjust: exact !important;
                                 }
                                 
                                 .shadow-lg {
@@ -200,24 +201,32 @@ export default function DailyReportListView() {
                                     padding: 4px !important;
                                     font-size: 8pt !important;
                                 }
-    
+            
                                 .bg-green-600 {
                                     background-color: #059669 !important;
                                     color: white !important;
                                 }
-    
+            
+                                .bg-lime-100 {
+                                    background-color: #ecfccb !important;
+                                }
+            
+                                .bg-rose-50 {
+                                    background-color: #fff1f2 !important;
+                                }
+            
                                 .border-green-200 {
                                     border-color: #A7F3D0 !important;
                                 }
-    
+            
                                 .p-8 {
                                     padding: 1rem !important;
                                 }
-    
+            
                                 .space-y-6 > * + * {
                                     margin-top: 1rem !important;
                                 }
-    
+            
                                 img {
                                     width: 80px !important;
                                     height: 80px !important;
@@ -230,7 +239,6 @@ export default function DailyReportListView() {
                     </body>
                 </html>
             `);
-
             const container = printWindow.document.getElementById('root')
             if (container) {
                 const root = createRoot(container)
@@ -313,13 +321,15 @@ export default function DailyReportListView() {
                                         <SelectItem value="all">All Dates</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Button
-                                    onClick={handleExportToPDF}
-                                    variant="outline"
-                                    className="bg-white hover:bg-gray-50"
-                                >
-                                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Export PDF
-                                </Button>
+                                {user?.role === 'manager' && (
+                                    <Button
+                                        onClick={handleExportToPDF}
+                                        variant="outline"
+                                        className="bg-white hover:bg-gray-50"
+                                    >
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Export PDF
+                                    </Button>
+                                )}
                                 {user?.role === 'planned_employee' && (
                                     <Button onClick={handleCreateReport} className="bg-green-600 hover:bg-green-700">
                                         <Plus className="mr-2 h-4 w-4" /> Create Report
@@ -393,7 +403,7 @@ export default function DailyReportListView() {
                                 </div>
                             )}
 
-<div className="rounded-lg border shadow-sm overflow-x-auto">
+                            <div className="rounded-lg border shadow-sm overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-gray-50">

@@ -70,7 +70,17 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
     const totals = calculateTotals();
     const completionPercentage = calculateCompletionPercentage(totals);
 
-
+    const getRowColor = (remarks?: string): string => {
+        if (!remarks) return '';
+        
+        const remarkLower = remarks.toLowerCase().trim();
+        if (remarkLower === 'cast as planned') {
+            return 'bg-lime-100 print:!bg-lime-100'; // Light lime green
+        } else if (remarkLower === 'mold assembly & rft fitting not done') {
+            return 'bg-rose-50 print:!bg-rose-50'; // Light rose color
+        }
+        return ''; // Default white
+    };
 
     return (
         <Card className="p-8 w-full bg-white shadow-lg print:shadow-none print:p-4">
@@ -155,7 +165,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                         </thead>
                         <tbody className="print:text-[8pt]">
                             {dailyReports.map((report, index) => (
-                                <tr key={report.id}>
+                                <tr key={report.id} className={`${getRowColor(report.remarks)}`}>
                                     <td className="border-b border-green-200 p-3 text-black">{String(index + 1).padStart(3, '0')}</td>
                                     <td className="border-b border-green-200 p-3 text-black">{report.job_number}</td>
                                     <td className="border-b border-green-200 p-3 text-black">{report.table_number}</td>

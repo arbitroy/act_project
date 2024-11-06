@@ -47,7 +47,8 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
             plannedAmount: acc.plannedAmount + safeNumber(report.planned_amount),
             plannedVolume: acc.plannedVolume + safeNumber(report.planned_volume),
             actualCasted: acc.actualCasted + safeNumber(report.actual_casted),
-            actualVolume: acc.actualVolume + safeNumber(report.actual_volume)
+            actualVolume: acc.actualVolume + safeNumber(report.actual_volume),
+            totalRequired: acc.totalRequired + 50 // Adding total required to calculations
         }), {
             alreadyCasted: 0,
             alreadyCastedVolume: 0,
@@ -56,39 +57,83 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
             plannedAmount: 0,
             plannedVolume: 0,
             actualCasted: 0,
-            actualVolume: 0
+            actualVolume: 0,
+            totalRequired: 0
         });
+    };
+    const calculateCompletionPercentage = (totals: ReturnType<typeof calculateTotals>) => {
+        const completedAmount = totals.alreadyCasted;
+        const totalRequired = totals.totalRequired;
+        return totalRequired > 0 ? (completedAmount / totalRequired) * 100 : 0;
     };
 
     const totals = calculateTotals();
-    const today = new Date();
+    const completionPercentage = calculateCompletionPercentage(totals);
+
 
 
     return (
-        <Card className="p-8 w-full bg-white shadow-lg print:shadow-none">
-            <div className="space-y-6">
+        <Card className="p-8 w-full bg-white shadow-lg print:shadow-none print:p-4">
+            <div className="space-y-6 print:space-y-2">
                 {/* Header */}
-                <div className="flex items-center bg-green-100 p-4 rounded-lg border-l-4 border-green-600">
-                    <Image priority src="/act-precast-logo.svg" alt="ACT PRECAST" width={100} height={150}
-                        className="rounded-full aspect-square object-cover" />
-                    <div className="ml-4 flex-1">
-                        <h1 className="text-xl font-bold text-black border-b-2 border-green-600 pb-2 mb-2">
-                            TECH DEPARTMENT
-                        </h1>
-                        <div className="text-sm text-black grid grid-cols-2 gap-x-8 gap-y-1">
-                            <p>ACT- IMS- FORM</p>
-                            <p>FM PR-001</p>
-                            <p>Rev. 0</p>
-                            <p>{formatDate(today)}</p>
+                <div className="border-b border-green-600 print:border-green-600">
+                    <div className="flex items-start space-x-4 print:space-x-2">
+                        {/* Logo Section */}
+                        <div className="flex-shrink-0 print:w-20">
+                            <Image
+                                priority
+                                src="/act-precast-logo.svg"
+                                alt="ACT PRECAST"
+                                width={100}
+                                height={150}
+                                className="rounded-full aspect-square object-cover print:w-20 print:h-20"
+                            />
+                        </div>
+
+                        {/* Title Section */}
+                        <div className="flex-grow">
+                            <div className="text-center border-b border-green-600 pb-2 print:pb-1">
+                                <h1 className="text-xl font-bold text-black print:text-base">
+                                    Integrated Management System
+                                </h1>
+                                <h2 className="text-lg font-semibold text-black mt-1 print:text-sm">
+                                    Daily Production Report
+                                </h2>
+                            </div>
+
+                            {/* Document Info Grid */}
+                            <div className="grid grid-cols-3 gap-4 mt-4 text-sm print:gap-2 print:mt-2 print:text-xs">
+                                <div className="space-y-1">
+                                    <p><span className="font-semibold">Issued by:</span> Tech Department</p>
+                                    <p><span className="font-semibold">Document Code:</span> ACT-MS-FORM</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p><span className="font-semibold">Document No:</span> FM PR-001</p>
+                                    <p><span className="font-semibold">Rev No:</span> 0</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p><span className="font-semibold">Issued on:</span> {formatDate(new Date())}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Location and Reporting Date */}
+                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-green-200 text-sm print:gap-2 print:mt-2 print:pt-2 print:text-xs">
+                        <div>
+                            <span className="font-semibold">Location:</span> ACT Factory - DIC
+                        </div>
+                        <div>
+                            <span className="font-semibold">Reporting Date:</span> {formatDate(new Date())}
                         </div>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto border border-green-300 rounded-lg">
-                    <table className="w-full text-sm border-collapse">
+                <div className="overflow-x-auto border border-green-300 rounded-lg print:border-green-300">
+                    <table className="w-full text-sm border-collapse print:text-[8pt]">
                         <thead>
-                            <tr className="bg-green-600">
+                            <tr className="bg-green-600 print:bg-green-600">
                                 <th className="border-b border-green-400 p-3 text-left text-white font-semibold">S/N</th>
                                 <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Job No</th>
                                 <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Table No</th>
@@ -108,7 +153,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                                 <th className="border-b border-green-400 p-3 text-left text-white font-semibold">Remarks</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="print:text-[8pt]">
                             {dailyReports.map((report, index) => (
                                 <tr key={report.id}>
                                     <td className="border-b border-green-200 p-3 text-black">{String(index + 1).padStart(3, '0')}</td>
@@ -156,7 +201,7 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                                 <td className="p-3 text-right text-white">{totals.alreadyCasted.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{totals.alreadyCastedVolume.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{totals.remainingQty.toFixed(2)}</td>
-                                <td className="p-3 text-right text-white">{(dailyReports.length * 50)}</td>
+                                <td className="p-3 text-right text-white">{totals.totalRequired}</td>
                                 <td className="p-3 text-right text-white">-</td>
                                 <td className="p-3 text-right text-white">{totals.totalVolume.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{(totals.totalVolume * 2.5).toFixed(3)}</td>
@@ -164,28 +209,19 @@ const PDFExportView: React.FC<PDFExportViewProps> = ({ dailyReports }) => {
                                 <td className="p-3 text-right text-white">{totals.plannedVolume.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{totals.actualCasted.toFixed(2)}</td>
                                 <td className="p-3 text-right text-white">{totals.actualVolume.toFixed(2)}</td>
-                                <td colSpan={2} className="p-3"></td>
+                                <td colSpan={2} className="p-3 text-center text-white">
+                                    <div>
+                                        <div className="font-bold">Overall Completion</div>
+                                        <div className="text-xl">{completionPercentage.toFixed(1)}%</div>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
 
-                {/* Footer */}
-                <div className="mt-8 space-y-4">
-                    <div className="flex justify-between">
-                        <div>
-                            <p className="font-bold text-black">Issued by:</p>
-                            <div className="mt-8 border-t-2 border-green-600 w-32"></div>
-                        </div>
-                    </div>
-                    <div className="text-sm text-black bg-green-100 p-4 rounded-lg space-y-1 border-l-4 border-green-600">
-                        <p>Document Code : ACT-IMS-FORM</p>
-                        <p>Document S No.</p>
-                        <p>Rev. No</p>
-                        <p>Issued By:</p>
-                    </div>
-                </div>
+
             </div>
         </Card>
     );

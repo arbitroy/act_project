@@ -169,12 +169,67 @@ export default function DailyReportListView() {
                     <head>
                         <title>ACT Casting Plan - ${pdfExportOption === 'current' ? filterDate : 'All Dates'}</title>
                         <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+                        <style>
+                            @media print {
+                                @page {
+                                    size: landscape;
+                                    margin: 0.5cm;
+                                }
+                                
+                                body {
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
+                                }
+                                
+                                .shadow-lg {
+                                    box-shadow: none !important;
+                                }
+                                
+                                table {
+                                    font-size: 8pt !important;
+                                    width: 100% !important;
+                                    break-inside: auto !important;
+                                }
+                                
+                                tr {
+                                    break-inside: avoid !important;
+                                    break-after: auto !important;
+                                }
+                                
+                                td, th {
+                                    padding: 4px !important;
+                                    font-size: 8pt !important;
+                                }
+    
+                                .bg-green-600 {
+                                    background-color: #059669 !important;
+                                    color: white !important;
+                                }
+    
+                                .border-green-200 {
+                                    border-color: #A7F3D0 !important;
+                                }
+    
+                                .p-8 {
+                                    padding: 1rem !important;
+                                }
+    
+                                .space-y-6 > * + * {
+                                    margin-top: 1rem !important;
+                                }
+    
+                                img {
+                                    width: 80px !important;
+                                    height: 80px !important;
+                                }
+                            }
+                        </style>
                     </head>
                     <body>
                         <div id="root"></div>
                     </body>
                 </html>
-            `)
+            `);
 
             const container = printWindow.document.getElementById('root')
             if (container) {
@@ -184,7 +239,7 @@ export default function DailyReportListView() {
 
             setTimeout(() => {
                 printWindow.print()
-            }, 1000)
+            }, 3000)
 
             toast({
                 title: "Success",

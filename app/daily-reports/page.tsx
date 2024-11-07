@@ -412,8 +412,8 @@ export default function DailyReportListView() {
                                             <TableHead>Job No.</TableHead>
                                             <TableHead>Table No.</TableHead>
                                             <TableHead>Element ID</TableHead>
-                                            <TableHead className="text-right">Already Casted (nos)</TableHead>
-                                            <TableHead className="text-right">Already Volume (m3)</TableHead>
+                                            <TableHead className="text-right">Already Casted Amount(nos)</TableHead>
+                                            <TableHead className="text-right">Already Casted Volume (m3)</TableHead>
                                             <TableHead className="text-right">Remaining Qty (nos)</TableHead>
                                             <TableHead className="text-right">Total Required</TableHead>
                                             <TableHead className="text-right">Vol m3</TableHead>

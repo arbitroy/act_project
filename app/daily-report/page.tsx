@@ -807,7 +807,7 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
 };
 
 // Helper components
-export const FieldError: React.FC<FieldErrorProps> = ({ error }) => {
+const FieldError: React.FC<FieldErrorProps> = ({ error }) => {
     if (!error?.message) return null;
     return (
         <div className="flex items-center mt-1 text-red-500 text-sm">
@@ -817,14 +817,14 @@ export const FieldError: React.FC<FieldErrorProps> = ({ error }) => {
     );
 };
 
-export const StatusItem: React.FC<StatusItemProps> = ({ label, value }) => (
+const StatusItem: React.FC<StatusItemProps> = ({ label, value }) => (
     <div className="space-y-1">
         <Label className="text-emerald-700">{label}</Label>
         <p className="font-medium">{value}</p>
     </div>
 );
 
-export const PlannedCastingsTable: React.FC<PlannedCastingsTableProps> = ({ plannedCastings, elements }) => {
+const PlannedCastingsTable: React.FC<PlannedCastingsTableProps> = ({ plannedCastings, elements }) => {
     if (plannedCastings.length === 0) {
         return (
             <div className="text-center py-4 bg-gray-50 rounded-lg">

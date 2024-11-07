@@ -11,9 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/use-toast"
-import { Loader2, Calendar, ClipboardList, Box, Activity } from 'lucide-react'
+import { Loader2, Calendar, ClipboardList, Box, Activity, Calculator } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface DailyReport {
@@ -21,13 +20,13 @@ interface DailyReport {
     date: string
     job_number: string
     table_number: string
-    element_id: string
+    element_code: string
     planned_amount: number
     planned_volume: number
 }
 
 const actualCastingSchema = z.object({
-    daily_report_id: z.string().min(1, 'Please select a daily report'),
+    daily_report_id: z.string().min(1, 'Please select an element'),
     casted_amount: z.number().min(0, 'Casted amount must be a positive number'),
     casted_volume: z.number().min(0, 'Casted volume must be a positive number'),
     remarks: z.string().optional(),
@@ -38,12 +37,13 @@ type ActualCastingFormData = z.infer<typeof actualCastingSchema>
 export default function ActualCastingInput() {
     const [dailyReports, setDailyReports] = useState<DailyReport[]>([])
     const [selectedReport, setSelectedReport] = useState<DailyReport | null>(null)
+    const [volumePerUnit, setVolumePerUnit] = useState<number>(0)
     const [isLoading, setIsLoading] = useState(false)
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0])
     const router = useRouter()
     const { user, loading } = useAuth()
 
-    const { control, handleSubmit, reset, formState: { errors } } = useForm<ActualCastingFormData>({
+    const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ActualCastingFormData>({
         resolver: zodResolver(actualCastingSchema),
         defaultValues: {
             daily_report_id: '',
@@ -52,6 +52,17 @@ export default function ActualCastingInput() {
             remarks: '',
         },
     })
+
+    // Watch the casted_amount to update volume automatically
+    const castedAmount = watch('casted_amount')
+
+    // Update casted volume whenever casted amount changes
+    useEffect(() => {
+        if (volumePerUnit && castedAmount) {
+            const calculatedVolume = Number((volumePerUnit * castedAmount).toFixed(2))
+            setValue('casted_volume', calculatedVolume)
+        }
+    }, [castedAmount, volumePerUnit, setValue])
 
     const fetchDailyReports = useCallback(async () => {
         setIsLoading(true)
@@ -84,6 +95,22 @@ export default function ActualCastingInput() {
         fetchDailyReports()
     }, [fetchDailyReports])
 
+    const handleReportSelect = (reportId: string) => {
+        const report = dailyReports.find(r => r.id.toString() === reportId)
+        if (report) {
+            setSelectedReport(report)
+            // Calculate volume per unit from planned values
+            const volumePerUnit = Number((report.planned_volume / report.planned_amount).toFixed(4))
+            setVolumePerUnit(volumePerUnit)
+            // Reset casted amount when selecting new element
+            setValue('casted_amount', 0)
+            setValue('casted_volume', 0)
+        } else {
+            setSelectedReport(null)
+            setVolumePerUnit(0)
+        }
+    }
+
     const onSubmit = async (data: ActualCastingFormData) => {
         setIsLoading(true)
         try {
@@ -101,6 +128,7 @@ export default function ActualCastingInput() {
             })
             reset()
             setSelectedReport(null)
+            setVolumePerUnit(0)
             fetchDailyReports()
         } catch (error) {
             console.error('Error submitting actual casting:', error)
@@ -113,12 +141,6 @@ export default function ActualCastingInput() {
             setIsLoading(false)
         }
     }
-
-    const handleReportSelect = (reportId: string) => {
-        const report = dailyReports.find(r => r.id.toString() === reportId)
-        setSelectedReport(report || null)
-    }
-
 
     if (loading) {
         return (
@@ -161,7 +183,7 @@ export default function ActualCastingInput() {
 
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label htmlFor="daily_report_id" className="text-black font-medium">Daily Report</Label>
+                                    <Label htmlFor="daily_report_id" className="text-black font-medium">Select Element</Label>
                                     <Controller
                                         name="daily_report_id"
                                         control={control}
@@ -174,7 +196,7 @@ export default function ActualCastingInput() {
                                                 value={field.value}
                                             >
                                                 <SelectTrigger className="border-green-200 focus:ring-green-500 focus:border-green-500">
-                                                    <SelectValue placeholder="Select a daily report" />
+                                                    <SelectValue placeholder="Select an element" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {dailyReports.map((report) => (
@@ -183,7 +205,7 @@ export default function ActualCastingInput() {
                                                             value={report.id.toString()}
                                                             className="hover:bg-green-50 text-black"
                                                         >
-                                                            {report.date} - Job: {report.job_number}, Table: {report.table_number}
+                                                            Element: {report.element_code} ({report.planned_amount} units, {report.planned_volume} m³)
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -200,32 +222,40 @@ export default function ActualCastingInput() {
                                         <CardHeader className="bg-green-50 border-b border-green-100">
                                             <div className="flex items-center space-x-2">
                                                 <Box className="h-5 w-5 text-green-600" />
-                                                <CardTitle className="text-lg text-black">Selected Report Details</CardTitle>
+                                                <CardTitle className="text-lg text-black">Element Details</CardTitle>
                                             </div>
                                         </CardHeader>
-                                        <CardContent className="p-0">
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow className="bg-green-50">
-                                                        <TableHead className="text-black font-medium">Date</TableHead>
-                                                        <TableHead className="text-black font-medium">Job No.</TableHead>
-                                                        <TableHead className="text-black font-medium">Table No.</TableHead>
-                                                        <TableHead className="text-black font-medium">Element ID</TableHead>
-                                                        <TableHead className="text-black font-medium">Planned Amount</TableHead>
-                                                        <TableHead className="text-black font-medium">Planned Volume</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    <TableRow className="hover:bg-green-50">
-                                                        <TableCell className="text-black">{selectedReport.date}</TableCell>
-                                                        <TableCell className="text-black">{selectedReport.job_number}</TableCell>
-                                                        <TableCell className="text-black">{selectedReport.table_number}</TableCell>
-                                                        <TableCell className="text-black">{selectedReport.element_id}</TableCell>
-                                                        <TableCell className="text-black">{selectedReport.planned_amount}</TableCell>
-                                                        <TableCell className="text-black">{selectedReport.planned_volume}</TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            </Table>
+                                        <CardContent className="p-4 space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Element ID</Label>
+                                                    <p className="font-medium text-black">{selectedReport.element_code}</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Date</Label>
+                                                    <p className="font-medium text-black">{selectedReport.date}</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Job Number</Label>
+                                                    <p className="font-medium text-black">{selectedReport.job_number}</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Table Number</Label>
+                                                    <p className="font-medium text-black">{selectedReport.table_number}</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Planned Amount</Label>
+                                                    <p className="font-medium text-black">{selectedReport.planned_amount} units</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Planned Volume</Label>
+                                                    <p className="font-medium text-black">{selectedReport.planned_volume} m³</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-sm text-gray-600">Volume per Unit</Label>
+                                                    <p className="font-medium text-black">{volumePerUnit} m³</p>
+                                                </div>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 )}
@@ -260,8 +290,8 @@ export default function ActualCastingInput() {
                                     <div className="space-y-2">
                                         <Label htmlFor="casted_volume" className="text-black font-medium">
                                             <div className="flex items-center space-x-2">
-                                                <Box className="h-4 w-4 text-green-500" />
-                                                <span>Actual Casted Volume</span>
+                                                <Calculator className="h-4 w-4 text-green-500" />
+                                                <span>Calculated Volume (Automatic)</span>
                                             </div>
                                         </Label>
                                         <Controller
@@ -271,16 +301,13 @@ export default function ActualCastingInput() {
                                                 <Input
                                                     type="number"
                                                     id="casted_volume"
-                                                    placeholder="Enter actual volume"
-                                                    className="border-green-200 focus:ring-green-500 focus:border-green-500 text-black"
+                                                    className="border-green-200 focus:ring-green-500 focus:border-green-500 text-black bg-gray-50"
                                                     {...field}
-                                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                                    disabled
+                                                    value={field.value || 0}
                                                 />
                                             )}
                                         />
-                                        {errors.casted_volume && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.casted_volume.message}</p>
-                                        )}
                                     </div>
                                 </div>
 

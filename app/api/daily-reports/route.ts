@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const job = searchParams.get('job') || ''
     const table = searchParams.get('table') || ''
-    const limit = 10
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10
     const offset = (page - 1) * limit
 
     try {
@@ -95,19 +95,24 @@ LEFT JOIN planned_castings pc ON dr.element_id = pc.element_id AND dr.date = pc.
             dataQuery += ' WHERE ' + whereString
         }
 
-        dataQuery += ' ORDER BY dr.date DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2)
-        queryParams.push(limit, offset)
+        dataQuery += ' ORDER BY dr.date DESC'
+        
+        // Only add LIMIT and OFFSET for paginated requests
+        if (limit !== -1) {  // -1 indicates no limit (for PDF export)
+            dataQuery += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2)
+            queryParams.push(limit, offset)
+        }
 
         const countResult = await queryWithRetry(countQuery, queryParams.slice(0, -2))
         const totalReports = parseInt(countResult.rows[0].count)
         const totalPages = Math.ceil(totalReports / limit)
 
-        const result = await queryWithRetry(dataQuery, queryParams)
+        const result = await queryWithRetry(dataQuery, limit === -1 ? queryParams : queryParams)
 
         return NextResponse.json({
             reports: result.rows,
-            totalPages: totalPages,
-            currentPage: page
+            totalPages: limit === -1 ? 1 : totalPages,
+            currentPage: limit === -1 ? 1 : page
         })
     } catch (err) {
         console.error(err)

@@ -16,7 +16,7 @@ export const RemarkType = {
 export const PREDEFINED_REMARKS = {
     PLANNED: 'Cast as planned',
     NOT_DONE: 'MOLD ASSEMBLY & RFT FITTING NOT DONE',
-    ADVANCED: 'Cast as advanced'
+    ADVANCED: 'Cast as advanced planned'
 } as const;
 
 // Types

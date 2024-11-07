@@ -144,7 +144,7 @@ export default function DailyReportListView() {
     }
     const handleExportToPDF = async () => {
         try {
-            let url = '/api/daily-reports?page=1&limit=1000'
+            let url = '/api/daily-reports?page=1&limit=-1'
             if (pdfExportOption === 'current') {
                 url += `&date=${filterDate}`
             }
@@ -201,35 +201,45 @@ export default function DailyReportListView() {
                                     padding: 4px !important;
                                     font-size: 8pt !important;
                                 }
-            
+                    
                                 .bg-green-600 {
                                     background-color: #059669 !important;
                                     color: white !important;
                                 }
-            
-                                .bg-lime-100 {
-                                    background-color: #ecfccb !important;
+                    
+                                .bg-lime-100, .print\\!bg-lime-100 {
+                                    background-color: #30f230 !important;
                                 }
-            
-                                .bg-rose-50 {
-                                    background-color: #fff1f2 !important;
+                                
+                                .bg-blue-100, .print\\!bg-blue-100 {
+                                    background-color: #5DE2E7 !important;
                                 }
-            
+                    
+                                .bg-rose-50, .print\\!bg-rose-50 {
+                                    background-color: #cfa5af !important;
+                                }
+                    
                                 .border-green-200 {
                                     border-color: #A7F3D0 !important;
                                 }
-            
+                    
                                 .p-8 {
                                     padding: 1rem !important;
                                 }
-            
+                    
                                 .space-y-6 > * + * {
                                     margin-top: 1rem !important;
                                 }
-            
+                    
                                 img {
                                     width: 80px !important;
                                     height: 80px !important;
+                                }
+                                
+                                /* Force background colors in printing */
+                                * {
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
                                 }
                             }
                         </style>

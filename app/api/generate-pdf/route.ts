@@ -1,4 +1,3 @@
-// /api/generate-pdf.ts
 import puppeteer from 'puppeteer';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middleware/auth';

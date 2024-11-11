@@ -313,7 +313,7 @@ export default function ElementsManagement() {
                             className="w-full bg-gray-100"
                         />
                         <p className="text-xs text-gray-500">
-                            Calculated: Volume × 2.5 (tonnes)
+                            Calculated: Volume × 2.5 (kgs)
                         </p>
                     </div>
 

@@ -20,55 +20,56 @@ export async function GET(request: NextRequest) {
     try {
         let countQuery = 'SELECT COUNT(*) FROM dailyreports dr JOIN jobs j ON dr.job_id = j.id JOIN tables t ON dr.table_id = t.id JOIN elements e ON dr.element_id = e.id'
         let dataQuery = `
-            SELECT 
-    dr.*, 
-    j.job_number, 
-    t.table_number, 
-    e.element_id as element_code,
-    e.volume as element_volume,
-    pc.planned_volume,
-    pc.planned_amount,
-    -- Already casted before this report
-    COALESCE(
-        (SELECT SUM(ac.casted_amount) 
-        FROM actualcastings ac
-        JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
-        WHERE dr2.element_id = dr.element_id 
-        AND dr2.date < dr.date), 
-    0) as already_casted,
-    -- Already casted volume before this report
-    COALESCE(
-        (SELECT SUM(ac.casted_volume) 
-        FROM actualcastings ac
-        JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
-        WHERE dr2.element_id = dr.element_id 
-        AND dr2.date < dr.date), 
-    0) as already_casted_volume,
-    -- Remaining quantity
-    GREATEST(0, 50 - COALESCE(
-        (SELECT SUM(ac.casted_amount) 
-        FROM actualcastings ac
-        JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
-        WHERE dr2.element_id = dr.element_id 
-        AND dr2.date <= dr.date),
-    0)) as remaining_qty,
-    -- Actual castings for this specific report
-    COALESCE(
-        (SELECT SUM(ac.casted_amount) 
-        FROM actualcastings ac
-        WHERE ac.daily_report_id = dr.id), 
-    0) as actual_casted,
-    COALESCE(
-        (SELECT SUM(ac.casted_volume) 
-        FROM actualcastings ac
-        WHERE ac.daily_report_id = dr.id), 
-    0) as actual_volume
-FROM dailyreports dr
-JOIN jobs j ON dr.job_id = j.id
-JOIN tables t ON dr.table_id = t.id
-JOIN elements e ON dr.element_id = e.id
-LEFT JOIN planned_castings pc ON dr.element_id = pc.element_id AND dr.date = pc.planned_date
-        `
+        SELECT 
+        dr.*, 
+        j.job_number, 
+        t.table_number, 
+        e.element_id as element_code,
+        e.volume as element_volume,
+        pc.planned_volume,
+        pc.planned_amount,
+        -- Already casted before this report
+        COALESCE(
+            (SELECT SUM(ac.casted_amount) 
+            FROM actualcastings ac
+            JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
+            WHERE dr2.element_id = dr.element_id 
+            AND dr2.date < dr.date), 
+        0) as already_casted,
+        -- Already casted volume before this report
+        COALESCE(
+            (SELECT SUM(ac.casted_volume) 
+            FROM actualcastings ac
+            JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
+            WHERE dr2.element_id = dr.element_id 
+            AND dr2.date < dr.date), 
+        0) as already_casted_volume,
+        -- Remaining quantity
+        GREATEST(0, 50 - COALESCE(
+            (SELECT SUM(ac.casted_amount) 
+            FROM actualcastings ac
+            JOIN dailyreports dr2 ON ac.daily_report_id = dr2.id
+            WHERE dr2.element_id = dr.element_id 
+            AND dr2.date <= dr.date),
+        0)) as remaining_qty,
+        -- Actual castings for this specific report
+        COALESCE(
+            (SELECT SUM(ac.casted_amount) 
+            FROM actualcastings ac
+            WHERE ac.daily_report_id = dr.id), 
+        0) as actual_casted,
+        COALESCE(
+            (SELECT SUM(ac.casted_volume) 
+            FROM actualcastings ac
+            WHERE ac.daily_report_id = dr.id), 
+        0) as actual_volume
+    FROM dailyreports dr
+    JOIN jobs j ON dr.job_id = j.id
+    JOIN tables t ON dr.table_id = t.id
+    JOIN elements e ON dr.element_id = e.id
+    LEFT JOIN planned_castings pc ON dr.element_id = pc.element_id AND dr.date = pc.planned_date
+    `
+
         const whereClause = []
         const queryParams = []
 

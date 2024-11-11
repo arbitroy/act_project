@@ -13,8 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { Plus, Search, AlertCircle, FileSpreadsheet, Filter, Calendar } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import PDFExportView from './PDFExportView'
-import { createRoot } from 'react-dom/client';
+
 
 interface DailyReport {
     id: string
@@ -142,136 +141,64 @@ export default function DailyReportListView() {
             })
         }
     }
+    
     const handleExportToPDF = async () => {
         try {
-            let url = '/api/daily-reports?page=1&limit=-1'
+            // First fetch the data
+            let fetchUrl = `/api/daily-reports?page=1&limit=-1`;
             if (pdfExportOption === 'current') {
-                url += `&date=${filterDate}`
+                fetchUrl += `&date=${filterDate}`;
             }
-            const response = await fetch(url)
-            if (!response.ok) throw new Error('Failed to fetch data')
-
-            const data = await response.json()
-
-            const printWindow = window.open('', '_blank')
-            if (!printWindow) {
-                toast({
-                    title: "Error",
-                    description: "Please allow pop-ups to generate PDF",
-                    variant: "destructive",
-                })
-                return
-            }
-
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                    <head>
-                        <title>ACT Casting Plan - ${pdfExportOption === 'current' ? filterDate : 'All Dates'}</title>
-                        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                        <style>
-                            @media print {
-                                @page {
-                                    size: landscape;
-                                    margin: 0.5cm;
-                                }
-                                
-                                body {
-                                    -webkit-print-color-adjust: exact !important;
-                                    print-color-adjust: exact !important;
-                                    color-adjust: exact !important;
-                                }
-                                
-                                .shadow-lg {
-                                    box-shadow: none !important;
-                                }
-                                
-                                table {
-                                    font-size: 8pt !important;
-                                    width: 100% !important;
-                                    break-inside: auto !important;
-                                }
-                                
-                                tr {
-                                    break-inside: avoid !important;
-                                    break-after: auto !important;
-                                }
-                                
-                                td, th {
-                                    padding: 4px !important;
-                                    font-size: 8pt !important;
-                                }
-                    
-                                .bg-green-600 {
-                                    background-color: #059669 !important;
-                                    color: white !important;
-                                }
-                    
-                                .bg-lime-100, .print\\!bg-lime-100 {
-                                    background-color: #30f230 !important;
-                                }
-                                
-                                .bg-blue-100, .print\\!bg-blue-100 {
-                                    background-color: #5DE2E7 !important;
-                                }
-                    
-                                .bg-rose-50, .print\\!bg-rose-50 {
-                                    background-color: #cfa5af !important;
-                                }
-                    
-                                .border-green-200 {
-                                    border-color: #A7F3D0 !important;
-                                }
-                    
-                                .p-8 {
-                                    padding: 1rem !important;
-                                }
-                    
-                                .space-y-6 > * + * {
-                                    margin-top: 1rem !important;
-                                }
-                    
-                                img {
-                                    width: 80px !important;
-                                    height: 80px !important;
-                                }
-                                
-                                /* Force background colors in printing */
-                                * {
-                                    -webkit-print-color-adjust: exact !important;
-                                    print-color-adjust: exact !important;
-                                }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div id="root"></div>
-                    </body>
-                </html>
-            `);
-            const container = printWindow.document.getElementById('root')
-            if (container) {
-                const root = createRoot(container)
-                root.render(<PDFExportView dailyReports={data.reports} />)
-            }
-
-            setTimeout(() => {
-                printWindow.print()
-            }, 3000)
-
+            
+            const dataResponse = await fetch(fetchUrl);
+            if (!dataResponse.ok) throw new Error('Failed to fetch data');
+            
+            const data = await dataResponse.json();
+    
+            // Then send the data to PDF generation endpoint
+            const response = await fetch('/api/generate-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    reports: data.reports,
+                    date: filterDate,
+                }),
+            });
+    
+            if (!response.ok) throw new Error('Failed to generate PDF');
+    
+            // Get the blob from the response
+            const blob = await response.blob();
+            
+            // Create a URL for the blob
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            // Create a temporary link and click it to download
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `daily-report-${filterDate}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            window.URL.revokeObjectURL(downloadUrl);
+            document.body.removeChild(a);
+    
             toast({
                 title: "Success",
                 description: "PDF generated successfully",
-            })
+            });
         } catch (error) {
-            console.error('Error generating PDF:', error)
+            console.error('Error generating PDF:', error);
             toast({
                 title: "Error",
                 description: "Failed to generate PDF",
                 variant: "destructive",
-            })
+            });
         }
-    }
+    };
 
     const handleStatusChange = async (reportId: string, newStatus: string) => {
         try {

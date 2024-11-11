@@ -34,6 +34,7 @@ export const DailyReportTable: React.FC<DailyReportTableProps> = ({
                         <TableHead>Amount</TableHead>
                         <TableHead>Volume (m³)</TableHead>
                         <TableHead>MEP</TableHead>
+                        <TableHead>RFT Source</TableHead>
                         <TableHead>Remarks</TableHead>
                         <TableHead>Actions</TableHead>
                     </TableRow>
@@ -47,6 +48,7 @@ export const DailyReportTable: React.FC<DailyReportTableProps> = ({
                             <TableCell>{record.planned_amount}</TableCell>
                             <TableCell>{record.planned_volume}</TableCell>
                             <TableCell>{record.mep}</TableCell>
+                            <TableCell>{record.rft}</TableCell>
                             <TableCell className="max-w-xs truncate">
                                 {record.remarks}
                             </TableCell>

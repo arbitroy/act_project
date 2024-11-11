@@ -60,6 +60,7 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
             date: today,
             user_id: userId ? parseInt(userId, 10) : 0,
             mep: 'NO',
+            rft: 'ACT',
             remarkType: 'PLANNED',
         }
     });
@@ -191,6 +192,7 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
             planned_amount: data.planned_amount,
             planned_volume: data.planned_volume,
             mep: data.mep,
+            rft: data.rft,
             remarks: data.remarkType === 'CUSTOM'
                 ? data.customRemark || ''
                 : PREDEFINED_REMARKS[data.remarkType],
@@ -308,7 +310,7 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
         }
     };
 
-    
+
 
 
     return (
@@ -634,6 +636,31 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
                                                         )}
                                                     />
                                                 </div>
+                                            </div>
+
+                                            {/* RFT Source Selection */}
+                                            <div className="space-y-2">
+                                                <Label className="text-black">RFT Source</Label>
+                                                <Controller
+                                                    name="rft"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            onValueChange={field.onChange}
+                                                            value={field.value}
+                                                        >
+                                                            <SelectTrigger className="border-emerald-200">
+                                                                <SelectValue placeholder="Select RFT Source" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="ACT">ACT</SelectItem>
+                                                                <SelectItem value="HAMDAN">Hamdan</SelectItem>
+                                                                <SelectItem value="OTHER">Other</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                <FieldError error={errors.rft} />
                                             </div>
 
                                             {/* Remarks Section */}

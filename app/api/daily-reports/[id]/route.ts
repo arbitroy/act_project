@@ -9,13 +9,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const { id } = params
-    const { casted_amount, casting_time } = await request.json()
+    const { casted_amount, casting_time, rft } = await request.json()
 
     try {
-        // First, update the daily report status
+        // First, update the daily report status and rft
         await queryWithRetry(
-            'UPDATE dailyreports SET status = $1 WHERE id = $2',
-            ['completed', id]
+            'UPDATE dailyreports SET status = $1, rft = $2 WHERE id = $3',
+            ['completed', rft, id]
         )
 
         // Then, create an entry in the actualcastings table

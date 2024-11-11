@@ -30,6 +30,7 @@ interface DailyReport {
     actual_casted: number
     actual_volume: number
     mep: string
+    rft: string
     remarks: string
     status: string
 }
@@ -361,6 +362,7 @@ export default function DailyReportListView() {
                                             <TableHead className="text-right">Actual Casted (nos)</TableHead>
                                             <TableHead className="text-right">Actual Volume (m3)</TableHead>
                                             <TableHead>MEP</TableHead>
+                                            <TableHead>RFT Source</TableHead>
                                             <TableHead>Remarks</TableHead>
                                             <TableHead>Status</TableHead>
                                             {user?.role === 'manager' && <TableHead>Actions</TableHead>}
@@ -379,7 +381,7 @@ export default function DailyReportListView() {
                                             ))
                                         ) : dailyReports.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={20} className="text-center py-8">
+                                                <TableCell colSpan={21} className="text-center py-8">
                                                     <div className="flex flex-col items-center gap-2">
                                                         <Filter className="h-8 w-8 text-gray-400" />
                                                         <p className="text-gray-500">No reports found for the selected date</p>
@@ -426,6 +428,7 @@ export default function DailyReportListView() {
                                                         {formatNumber(report.actual_volume)}
                                                     </TableCell>
                                                     <TableCell>{report.mep}</TableCell>
+                                                    <TableCell>{report.rft}</TableCell>
                                                     <TableCell>
                                                         <span className="truncate max-w-[200px] block">
                                                             {report.remarks}

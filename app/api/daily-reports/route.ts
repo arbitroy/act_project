@@ -1,5 +1,5 @@
+import { NextResponse, NextRequest } from 'next/server'
 import { authMiddleware } from '@/middleware/auth'
-import { NextRequest, NextResponse } from 'next/server'
 import { queryWithRetry } from '../db'
 
 export async function GET(request: NextRequest) {
@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
         e.volume as element_volume,
         pc.planned_volume,
         pc.planned_amount,
-        -- Already casted before this report
         COALESCE(
             (SELECT SUM(ac.casted_amount) 
             FROM actualcastings ac
@@ -36,7 +35,6 @@ export async function GET(request: NextRequest) {
             WHERE dr2.element_id = dr.element_id 
             AND dr2.date < dr.date), 
         0) as already_casted,
-        -- Already casted volume before this report
         COALESCE(
             (SELECT SUM(ac.casted_volume) 
             FROM actualcastings ac
@@ -44,7 +42,6 @@ export async function GET(request: NextRequest) {
             WHERE dr2.element_id = dr.element_id 
             AND dr2.date < dr.date), 
         0) as already_casted_volume,
-        -- Remaining quantity
         GREATEST(0, 50 - COALESCE(
             (SELECT SUM(ac.casted_amount) 
             FROM actualcastings ac
@@ -52,7 +49,6 @@ export async function GET(request: NextRequest) {
             WHERE dr2.element_id = dr.element_id 
             AND dr2.date <= dr.date),
         0)) as remaining_qty,
-        -- Actual castings for this specific report
         COALESCE(
             (SELECT SUM(ac.casted_amount) 
             FROM actualcastings ac
@@ -98,8 +94,7 @@ export async function GET(request: NextRequest) {
 
         dataQuery += ' ORDER BY dr.date DESC'
         
-        // Only add LIMIT and OFFSET for paginated requests
-        if (limit !== -1) {  // -1 indicates no limit (for PDF export)
+        if (limit !== -1) {
             dataQuery += ' LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2)
             queryParams.push(limit, offset)
         }
@@ -127,12 +122,12 @@ export async function POST(request: NextRequest) {
         return authResponse
     }
 
-    const { date, user_id, job_id, table_id, element_id, mep, remarks } = await request.json()
+    const { date, user_id, job_id, table_id, element_id, mep, remarks, rft } = await request.json()
 
     try {
         const result = await queryWithRetry(
-            'INSERT INTO dailyreports (date, user_id, job_id, table_id, element_id, mep, remarks) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [date, user_id, job_id, table_id, element_id, mep, remarks]
+            'INSERT INTO dailyreports (date, user_id, job_id, table_id, element_id, mep, remarks, rft) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [date, user_id, job_id, table_id, element_id, mep, remarks, rft]
         )
 
         return NextResponse.json(result.rows[0], { status: 201 })
@@ -148,12 +143,12 @@ export async function PUT(request: NextRequest) {
         return authResponse
     }
 
-    const { id, status } = await request.json()
+    const { id, status, rft } = await request.json()
 
     try {
         const result = await queryWithRetry(
-            'UPDATE dailyreports SET status = $1 WHERE id = $2 RETURNING *',
-            [status, id]
+            'UPDATE dailyreports SET status = $1, rft = $2 WHERE id = $3 RETURNING *',
+            [status, rft, id]
         )
 
         if (result.rowCount === 0) {

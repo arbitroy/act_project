@@ -5,6 +5,11 @@ export const MEPOption = {
     MEP: 'MEP',
     NO: 'NO'
 } as const;
+export const RFTSource = {
+    ACT: 'ACT',
+    HAMDAN: 'HAMDAN',
+    OTHER: 'OTHER'
+} as const;
 
 export const RemarkType = {
     PLANNED: 'PLANNED',
@@ -22,6 +27,7 @@ export const PREDEFINED_REMARKS = {
 // Types
 export type MEPOption = typeof MEPOption[keyof typeof MEPOption];
 export type RemarkType = typeof RemarkType[keyof typeof RemarkType];
+export type RFTSource = typeof RFTSource[keyof typeof RFTSource];
 
 // Base types
 export interface Job {
@@ -72,6 +78,7 @@ export const dailyReportSchema = z.object({
     planned_volume: z.number().min(0, "Volume must be positive"),
     planned_amount: z.number().int().min(1, "Amount must be at least 1"),
     mep: z.enum([MEPOption.MEP, MEPOption.NO]),
+    rft: z.enum([RFTSource.ACT, RFTSource.HAMDAN, RFTSource.OTHER]),
     remarkType: z.enum([RemarkType.PLANNED, RemarkType.NOT_DONE, RemarkType.ADVANCED, RemarkType.CUSTOM]),
     customRemark: z.string().optional(),
 });
@@ -88,9 +95,11 @@ export interface DailyReportRecord {
     planned_amount: number;
     planned_volume: number;
     mep: MEPOption;
+    rft: RFTSource;
     remarks: string;
     original_data: DailyReportFormData;
 }
+
 
 export interface StatusItemProps {
     label: string;

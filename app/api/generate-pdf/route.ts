@@ -18,8 +18,17 @@ interface DailyReport {
     actual_casted: number;
     actual_volume: number;
     mep: string;
+    rft: string;
     remarks: string;
 }
+
+interface RFTSummary {
+    [key: string]: {
+        count: number;
+        volume: number;
+    };
+}
+
 
 
 const getRowColor = (remarks?: string): string => {
@@ -58,12 +67,58 @@ const calculateTotals = (dailyReports: DailyReport[]) => {
         totalRequired: 0
     });
 };
+const calculateRFTSummary = (reports: DailyReport[]): RFTSummary => {
+    return reports.reduce((acc, report) => {
+        if (report.rft && report.actual_casted > 0) {  // Only count if there's actual casting
+            if (!acc[report.rft]) {
+                acc[report.rft] = { count: 0, volume: 0 };
+            }
+            acc[report.rft].count += Number(report.actual_casted || 0);
+            acc[report.rft].volume += Number(report.actual_volume || 0);
+        }
+        return acc;
+    }, {} as RFTSummary);
+};
 
+const generateRFTSummaryHTML = (rftSummary: RFTSummary) => {
+    const sources = Object.entries(rftSummary);
+    if (sources.length === 0) return '';
+
+    const rows = sources.map(([source, { count, volume }]) => `
+        <tr class="border-b border-green-200">
+            <td class="p-0.5 text-left font-semibold">${source}</td>
+            <td class="p-0.5 text-right font-semibold">${count.toFixed(2)}</td>
+            <td class="p-0.5 text-right font-semibold">${volume.toFixed(2)}</td>
+        </tr>
+    `).join('');
+
+    return `
+        <div class="absolute right-0 bottom-0 border border-green-300 rounded-lg bg-white" style="width: 200px;">
+            <table class="w-full text-[7px]">
+                <thead>
+                    <tr class="bg-green-600">
+                        <th colspan="3" class="border-b border-green-400 p-0.5 text-center text-white font-semibold">RFT Summary</th>
+                    </tr>
+                    <tr class="bg-green-600">
+                        <th class="border-b border-green-400 p-0.5 text-left text-white font-semibold">Source</th>
+                        <th class="border-b border-green-400 p-0.5 text-right text-white font-semibold">Qty</th>
+                        <th class="border-b border-green-400 p-0.5 text-right text-white font-semibold">Vol (m3)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    `;
+};
 const generateTableHTML = (dailyReports: DailyReport[]) => {
     const totals = calculateTotals(dailyReports);
     const completionPercentage = totals.totalRequired > 0 
         ? (totals.alreadyCasted / totals.totalRequired) * 100 
         : 0;
+
+    const rftSummary = calculateRFTSummary(dailyReports);
 
     const rows = dailyReports.map((report, index) => `
         <tr class="${getRowColor(report.remarks)}">
@@ -83,12 +138,13 @@ const generateTableHTML = (dailyReports: DailyReport[]) => {
             <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.actual_casted || 0).toFixed(2)}</td>
             <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.actual_volume || 0).toFixed(2)}</td>
             <td class="border-b border-r border-green-200 p-0.5 text-center">${report.mep}</td>
+            <td class="border-b border-r border-green-200 p-0.5 text-center">${report.rft || ''}</td>
             <td class="border-b border-green-200 p-0.5">${report.remarks || ''}</td>
         </tr>
     `).join('');
 
     return `
-        <div class="overflow-x-auto border border-green-300 rounded-lg">
+        <div class="relative overflow-x-auto border border-green-300 rounded-lg">
             <table class="w-full text-[7px] border-collapse">
                 <thead>
                     <tr class="bg-green-600">
@@ -108,6 +164,7 @@ const generateTableHTML = (dailyReports: DailyReport[]) => {
                         <th class="border-b border-r border-green-400 p-0.5 text-right text-white font-semibold">Actual Cast (nos)</th>
                         <th class="border-b border-r border-green-400 p-0.5 text-right text-white font-semibold">Actual Vol (m3)</th>
                         <th class="border-b border-r border-green-400 p-0.5 text-center text-white font-semibold">MEP</th>
+                        <th class="border-b border-r border-green-400 p-0.5 text-center text-white font-semibold">RFT Source</th>
                         <th class="border-b border-green-400 p-0.5 text-left text-white font-semibold">Remarks</th>
                     </tr>
                 </thead>
@@ -126,7 +183,7 @@ const generateTableHTML = (dailyReports: DailyReport[]) => {
                         <td class="border-r border-green-400 p-0.5 text-right text-white">${totals.plannedVolume.toFixed(2)}</td>
                         <td class="border-r border-green-400 p-0.5 text-right text-white">${totals.actualCasted.toFixed(2)}</td>
                         <td class="border-r border-green-400 p-0.5 text-right text-white">${totals.actualVolume.toFixed(2)}</td>
-                        <td colspan="2" class="p-0.5 text-center text-white">
+                        <td colspan="3" class="p-0.5 text-center text-white">
                             <div>
                                 <div class="font-semibold">Overall Completion</div>
                                 <div>${completionPercentage.toFixed(1)}%</div>
@@ -135,6 +192,7 @@ const generateTableHTML = (dailyReports: DailyReport[]) => {
                     </tr>
                 </tbody>
             </table>
+            ${generateRFTSummaryHTML(rftSummary)}
         </div>
     `;
 };

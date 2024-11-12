@@ -5,7 +5,7 @@ import { queryWithRetry } from '../db'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: {  params: { projectId: string } }
 ) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
@@ -13,7 +13,7 @@ export async function GET(
     }
 
     try {
-        const projectId = params.id
+        const projectId = params.projectId
 
         const result = await queryWithRetry(`
             SELECT 

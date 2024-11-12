@@ -13,6 +13,7 @@ interface DailyReport {
     already_casted: number;
     already_casted_volume: number;
     remaining_qty: number;
+    required_amount: number;
     planned_volume: number;
     planned_amount: number;
     actual_casted: number;
@@ -49,12 +50,12 @@ const calculateTotals = (dailyReports: DailyReport[]) => {
         alreadyCasted: acc.alreadyCasted + Number(report.already_casted || 0),
         alreadyCastedVolume: acc.alreadyCastedVolume + Number(report.already_casted_volume || 0),
         remainingQty: acc.remainingQty + Number(report.remaining_qty || 0),
-        totalVolume: acc.totalVolume + (50 * Number(report.element_volume || 0)),
+        totalVolume: acc.totalVolume + (Number(report.required_amount || 0) * Number(report.element_volume || 0)),
         plannedAmount: acc.plannedAmount + Number(report.planned_amount || 0),
         plannedVolume: acc.plannedVolume + Number(report.planned_volume || 0),
         actualCasted: acc.actualCasted + Number(report.actual_casted || 0),
         actualVolume: acc.actualVolume + Number(report.actual_volume || 0),
-        totalRequired: acc.totalRequired + 50
+        totalRequired: acc.totalRequired + Number(report.required_amount || 0)
     }), {
         alreadyCasted: 0,
         alreadyCastedVolume: 0,
@@ -114,34 +115,34 @@ const generateRFTSummaryHTML = (rftSummary: RFTSummary) => {
 };
 const generateTableHTML = (dailyReports: DailyReport[]) => {
     const totals = calculateTotals(dailyReports);
-    const completionPercentage = totals.totalRequired > 0 
-        ? (totals.alreadyCasted / totals.totalRequired) * 100 
+    const completionPercentage = totals.totalRequired > 0
+        ? (totals.alreadyCasted / totals.totalRequired) * 100
         : 0;
 
     const rftSummary = calculateRFTSummary(dailyReports);
 
     const rows = dailyReports.map((report, index) => `
-        <tr class="${getRowColor(report.remarks)}">
-            <td class="border-b border-r border-green-200 p-0.5">${String(index + 1).padStart(3, '0')}</td>
-            <td class="border-b border-r border-green-200 p-0.5">${report.job_number}</td>
-            <td class="border-b border-r border-green-200 p-0.5">${report.table_number}</td>
-            <td class="border-b border-r border-green-200 p-0.5">${report.element_code}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.already_casted || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.already_casted_volume || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.remaining_qty || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">50</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.element_volume || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${(Number(report.element_volume || 0) * 50).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${(Number(report.element_volume || 0) * 2.5).toFixed(3)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.planned_amount || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.planned_volume || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.actual_casted || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.actual_volume || 0).toFixed(2)}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-center">${report.mep}</td>
-            <td class="border-b border-r border-green-200 p-0.5 text-center">${report.rft || ''}</td>
-            <td class="border-b border-green-200 p-0.5">${report.remarks || ''}</td>
-        </tr>
-    `).join('');
+    <tr class="${getRowColor(report.remarks)}">
+        <td class="border-b border-r border-green-200 p-0.5">${String(index + 1).padStart(3, '0')}</td>
+        <td class="border-b border-r border-green-200 p-0.5">${report.job_number}</td>
+        <td class="border-b border-r border-green-200 p-0.5">${report.table_number}</td>
+        <td class="border-b border-r border-green-200 p-0.5">${report.element_code}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.already_casted || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.already_casted_volume || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.remaining_qty || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.required_amount || 0)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.element_volume || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${(Number(report.element_volume || 0) * Number(report.required_amount || 0)).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${(Number(report.element_volume || 0) * 2.5).toFixed(3)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.planned_amount || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.planned_volume || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.actual_casted || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-right">${Number(report.actual_volume || 0).toFixed(2)}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-center">${report.mep}</td>
+        <td class="border-b border-r border-green-200 p-0.5 text-center">${report.rft || ''}</td>
+        <td class="border-b border-green-200 p-0.5">${report.remarks || ''}</td>
+    </tr>
+`).join('');
 
     return `
         <div class="relative overflow-x-auto border border-green-300 rounded-lg">
@@ -303,7 +304,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Error generating PDF:', error);
         return NextResponse.json(
-            { error: 'Failed to generate PDF' }, 
+            { error: 'Failed to generate PDF' },
             { status: 500 }
         );
     }

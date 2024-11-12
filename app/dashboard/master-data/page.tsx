@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import Layout from '@/components/Layout'
-import MasterDataTabs from './MasterDataTabs'
+import ProjectsList from './ProjectsList'
 
 export default async function MasterDataManagement() {
     const cookieStore = cookies()
@@ -27,8 +27,8 @@ export default async function MasterDataManagement() {
         return (
             <Layout>
                 <div className="bg-white shadow-md rounded-lg p-6">
-                    <h2 className="text-2xl font-bold mb-4 text-black">Master Data Management</h2>
-                    <MasterDataTabs />
+                    <h2 className="text-2xl font-bold mb-4 text-black">Projects</h2>
+                    <ProjectsList />
                 </div>
             </Layout>
         )

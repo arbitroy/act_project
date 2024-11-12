@@ -28,15 +28,16 @@ export const DailyReportTable: React.FC<DailyReportTableProps> = ({
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Job Number</TableHead>
-                        <TableHead>Table Number</TableHead>
-                        <TableHead>Element</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Volume (m³)</TableHead>
-                        <TableHead>MEP</TableHead>
-                        <TableHead>RFT Source</TableHead>
-                        <TableHead>Remarks</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="font-semibold">Job Number</TableHead>
+                        <TableHead className="font-semibold">Table Number</TableHead>
+                        <TableHead className="font-semibold">Element</TableHead>
+                        <TableHead className="font-semibold">Required</TableHead>
+                        <TableHead className="font-semibold">Planned</TableHead>
+                        <TableHead className="font-semibold">Volume (m³)</TableHead>
+                        <TableHead className="font-semibold">MEP</TableHead>
+                        <TableHead className="font-semibold">RFT Source</TableHead>
+                        <TableHead className="font-semibold">Remarks</TableHead>
+                        <TableHead className="font-semibold">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -45,8 +46,9 @@ export const DailyReportTable: React.FC<DailyReportTableProps> = ({
                             <TableCell>{record.job_number}</TableCell>
                             <TableCell>{record.table_number}</TableCell>
                             <TableCell>{record.element_id}</TableCell>
+                            <TableCell>{record.required_amount || '-'}</TableCell>
                             <TableCell>{record.planned_amount}</TableCell>
-                            <TableCell>{record.planned_volume}</TableCell>
+                            <TableCell>{record.planned_volume.toFixed(2)}</TableCell>
                             <TableCell>{record.mep}</TableCell>
                             <TableCell>{record.rft}</TableCell>
                             <TableCell className="max-w-xs truncate">

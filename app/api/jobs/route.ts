@@ -2,15 +2,24 @@ import { NextResponse, NextRequest } from 'next/server'
 import { authMiddleware } from '@/middleware/auth'
 import { queryWithRetry } from '../db'
 
-// GET all jobs
 export async function GET(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
     }
 
+    const searchParams = new URL(request.url).searchParams
+    const projectId = searchParams.get('projectId')
+
+    if (!projectId) {
+        return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
     try {
-        const result = await queryWithRetry('SELECT * FROM Jobs')
+        const result = await queryWithRetry(
+            'SELECT * FROM Jobs WHERE project_id = $1',
+            [projectId]
+        )
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching jobs:', error)
@@ -18,23 +27,21 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST new job
 export async function POST(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
     }
     try {
-        const { job_number, description } = await request.json()
+        const { job_number, description, project_id } = await request.json()
         
-        // Validate input
-        if (!job_number || job_number.trim() === '') {
-            return NextResponse.json({ error: 'Job number is required' }, { status: 400 })
+        if (!project_id) {
+            return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
         }
 
         const result = await queryWithRetry(
-            'INSERT INTO Jobs (job_number, Description) VALUES ($1, $2) RETURNING *',
-            [job_number, description]
+            'INSERT INTO Jobs (job_number, description, project_id) VALUES ($1, $2, $3) RETURNING *',
+            [job_number, description, project_id]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {

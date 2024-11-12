@@ -46,7 +46,10 @@ export interface Element {
     readonly id: number;
     readonly element_id: string;
     readonly volume: string;
+    readonly weight: string;
+    readonly required_amount: number;
 }
+
 
 export interface PlannedCasting {
     id: number;
@@ -57,8 +60,10 @@ export interface PlannedCasting {
 }
 
 export interface RemainingQuantity {
+    totalPlannedVolume: number;
     elementId: number;
     totalVolume: number;
+    totalRequiredAmount: number;
     totalCasted: number;
     remainingVolume: number;
     completionPercentageVolume: number;
@@ -94,6 +99,7 @@ export interface DailyReportRecord {
     element_id: string;
     planned_amount: number;
     planned_volume: number;
+    required_amount: number;
     mep: MEPOption;
     rft: RFTSource;
     remarks: string;
@@ -104,6 +110,7 @@ export interface DailyReportRecord {
 export interface StatusItemProps {
     label: string;
     value: string | number;
+    className?: string;
 }
 
 export interface PlannedCastingsTableProps {

@@ -25,6 +25,7 @@ interface DailyReport {
     already_casted: number
     already_casted_volume: number
     remaining_qty: number
+    required_amount: number
     planned_volume: number
     planned_amount: number
     actual_casted: number
@@ -142,7 +143,7 @@ export default function DailyReportListView() {
             })
         }
     }
-    
+
     const handleExportToPDF = async () => {
         try {
             // First fetch the data
@@ -150,12 +151,12 @@ export default function DailyReportListView() {
             if (pdfExportOption === 'current') {
                 fetchUrl += `&date=${filterDate}`;
             }
-            
+
             const dataResponse = await fetch(fetchUrl);
             if (!dataResponse.ok) throw new Error('Failed to fetch data');
-            
+
             const data = await dataResponse.json();
-    
+
             // Then send the data to PDF generation endpoint
             const response = await fetch('/api/generate-pdf', {
                 method: 'POST',
@@ -167,26 +168,26 @@ export default function DailyReportListView() {
                     date: filterDate,
                 }),
             });
-    
+
             if (!response.ok) throw new Error('Failed to generate PDF');
-    
+
             // Get the blob from the response
             const blob = await response.blob();
-            
+
             // Create a URL for the blob
             const downloadUrl = window.URL.createObjectURL(blob);
-            
+
             // Create a temporary link and click it to download
             const a = document.createElement('a');
             a.href = downloadUrl;
             a.download = `daily-report-${filterDate}.pdf`;
             document.body.appendChild(a);
             a.click();
-            
+
             // Clean up
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
-    
+
             toast({
                 title: "Success",
                 description: "PDF generated successfully",
@@ -353,10 +354,10 @@ export default function DailyReportListView() {
                                             <TableHead className="text-right">Already Casted Amount(nos)</TableHead>
                                             <TableHead className="text-right">Already Casted Volume (m3)</TableHead>
                                             <TableHead className="text-right">Remaining Qty (nos)</TableHead>
-                                            <TableHead className="text-right">Total Required</TableHead>
-                                            <TableHead className="text-right">Vol m3</TableHead>
-                                            <TableHead className="text-right">Total Vol m3</TableHead>
-                                            <TableHead className="text-right">Weight</TableHead>
+                                            <TableHead className="text-right">Total Required (nos)</TableHead>
+                                            <TableHead className="text-right">Element Volume (m³)</TableHead>
+                                            <TableHead className="text-right">Total Required Volume (m³)</TableHead>
+                                            <TableHead className="text-right">Weight (kg)</TableHead>
                                             <TableHead className="text-right">Planned to Cast (nos)</TableHead>
                                             <TableHead className="text-right">Planned Volume (m3)</TableHead>
                                             <TableHead className="text-right">Actual Casted (nos)</TableHead>
@@ -379,7 +380,7 @@ export default function DailyReportListView() {
                                                     ))}
                                                 </TableRow>
                                             ))
-                                        ) : dailyReports.length === 0 ? (
+                                        ) : dailyReports.length === 0 ?(
                                             <TableRow>
                                                 <TableCell colSpan={21} className="text-center py-8">
                                                     <div className="flex flex-col items-center gap-2">
@@ -390,72 +391,74 @@ export default function DailyReportListView() {
                                             </TableRow>
                                         ) : (
                                             dailyReports.map((report, index) => (
-                                                <TableRow key={`${report.id}-${index}`} className="hover:bg-gray-50">
-                                                    <TableCell>{report.id}</TableCell>
-                                                    <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
-                                                    <TableCell>{report.job_number}</TableCell>
-                                                    <TableCell>{report.table_number}</TableCell>
-                                                    <TableCell>{report.element_code}</TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.already_casted)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.already_casted_volume)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.remaining_qty)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">50</TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.element_volume)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(50 * report.element_volume)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.element_volume * 2.5)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.planned_amount)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.planned_volume)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.actual_casted)}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {formatNumber(report.actual_volume)}
-                                                    </TableCell>
-                                                    <TableCell>{report.mep}</TableCell>
-                                                    <TableCell>{report.rft}</TableCell>
-                                                    <TableCell>
-                                                        <span className="truncate max-w-[200px] block">
-                                                            {report.remarks}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <StatusBadge status={report.status} />
-                                                    </TableCell>
-                                                    {user?.role === 'manager' && (
-                                                        <TableCell>
-                                                            <Select
-                                                                value={report.status}
-                                                                onValueChange={(value) => handleStatusChange(report.id, value)}
-                                                            >
-                                                                <SelectTrigger className="w-[130px]">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent className="bg-white">
-                                                                    <SelectItem value="pending">Pending</SelectItem>
-                                                                    <SelectItem value="in_progress">In progress</SelectItem>
-                                                                    <SelectItem value="completed">Completed</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </TableCell>
-                                                    )}
-                                                </TableRow>
-                                            ))
+                                        <TableRow key={`${report.id}-${index}`} className="hover:bg-gray-50">
+                                            <TableCell>{report.id}</TableCell>
+                                            <TableCell>{new Date(report.date).toLocaleDateString()}</TableCell>
+                                            <TableCell>{report.job_number}</TableCell>
+                                            <TableCell>{report.table_number}</TableCell>
+                                            <TableCell>{report.element_code}</TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.already_casted)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.already_casted_volume)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.remaining_qty)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.required_amount)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.element_volume)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.required_amount * report.element_volume)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.element_volume * 2.5)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.planned_amount)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.planned_volume)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.actual_casted)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono">
+                                                {formatNumber(report.actual_volume)}
+                                            </TableCell>
+                                            <TableCell>{report.mep}</TableCell>
+                                            <TableCell>{report.rft}</TableCell>
+                                            <TableCell>
+                                                <span className="truncate max-w-[200px] block">
+                                                    {report.remarks}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <StatusBadge status={report.status} />
+                                            </TableCell>
+                                            {user?.role === 'manager' && (
+                                                <TableCell>
+                                                    <Select
+                                                        value={report.status}
+                                                        onValueChange={(value) => handleStatusChange(report.id, value)}
+                                                    >
+                                                        <SelectTrigger className="w-[130px]">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-white">
+                                                            <SelectItem value="pending">Pending</SelectItem>
+                                                            <SelectItem value="in_progress">In progress</SelectItem>
+                                                            <SelectItem value="completed">Completed</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                        ))
                                         )}
                                     </TableBody>
                                 </Table>

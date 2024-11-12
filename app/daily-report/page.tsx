@@ -118,10 +118,21 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
         if (selectedElementId) {
             const element = elements.find(e => e.id === selectedElementId);
             setSelectedElement(element || null);
+
+            // Add this validation
+            const plannedAmount = watch('planned_amount') || 0;
+            if (element && plannedAmount > element.required_amount) {
+                toast({
+                    title: "Warning",
+                    description: `Planned amount (${plannedAmount}) exceeds required amount (${element.required_amount})`,
+                    variant: "default",
+                });
+            }
+
             void fetchRemainingQuantity(selectedElementId);
             void fetchPlannedCastings(selectedDate);
         }
-    }, [selectedElementId, selectedDate, elements]);
+    }, [selectedElementId, selectedDate, elements, watch]);
 
     useEffect(() => {
         if (selectedElement) {
@@ -129,6 +140,15 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
             const elementVolume = parseFloat(selectedElement.volume);
             const calculatedVolume = amount * elementVolume;
             setValue('planned_volume', calculatedVolume);
+
+            // Add this validation
+            if (amount > selectedElement.required_amount) {
+                toast({
+                    title: "Warning",
+                    description: `Planned amount (${amount}) exceeds required amount (${selectedElement.required_amount})`,
+                    variant: "warning",
+                });
+            }
         }
     }, [selectedElement, setValue, watch]);
 
@@ -189,6 +209,7 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
             job_number: selectedJob?.job_number || '',
             table_number: selectedTable?.table_number || '',
             element_id: selectedElement?.element_id || '',
+            required_amount: selectedElement?.required_amount || 0,
             planned_amount: data.planned_amount,
             planned_volume: data.planned_volume,
             mep: data.mep,
@@ -509,55 +530,84 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
 
                                             {/* Element Status */}
                                             {selectedElement && remainingQuantity && (
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-emerald-50 rounded-lg">
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-emerald-50 rounded-lg">
+                                                    <StatusItem
+                                                        label="Required Amount"
+                                                        value={remainingQuantity.totalRequiredAmount}
+                                                    />
+                                                    <StatusItem
+                                                        label="Planned Amount"
+                                                        value={remainingQuantity.totalPlannedAmount}
+                                                        className={remainingQuantity.totalPlannedAmount > remainingQuantity.totalRequiredAmount ? "text-amber-600" : ""}
+                                                    />
+                                                    <StatusItem
+                                                        label="Remaining Amount"
+                                                        value={Math.max(0, remainingQuantity.totalRequiredAmount - remainingQuantity.totalPlannedAmount)}
+                                                    />
+                                                    <StatusItem
+                                                        label="Amount Progress"
+                                                        value={`${Math.min(100, (remainingQuantity.totalPlannedAmount / remainingQuantity.totalRequiredAmount * 100)).toFixed(1)}%`}
+                                                    />
                                                     <StatusItem
                                                         label="Total Volume"
                                                         value={`${remainingQuantity.totalVolume} m³`}
+                                                    />
+                                                    <StatusItem
+                                                        label="Planned Volume"
+                                                        value={`${remainingQuantity.totalPlannedVolume} m³`}
                                                     />
                                                     <StatusItem
                                                         label="Remaining Volume"
                                                         value={`${remainingQuantity.remainingVolume} m³`}
                                                     />
                                                     <StatusItem
-                                                        label="Completion"
+                                                        label="Volume Progress"
                                                         value={`${remainingQuantity.completionPercentageVolume}%`}
-                                                    />
-                                                    <StatusItem
-                                                        label="Total Amount"
-                                                        value={remainingQuantity.totalPlannedAmount}
-                                                    />
-                                                    <StatusItem
-                                                        label="Remaining Amount"
-                                                        value={remainingQuantity.remainingAmount}
-                                                    />
-                                                    <StatusItem
-                                                        label="Amount Completion"
-                                                        value={`${remainingQuantity.completionPercentageAmount}%`}
                                                     />
                                                 </div>
                                             )}
-
                                             {/* Planning Fields */}
                                             {selectedElement && (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     <div className="space-y-2">
-                                                        <Label htmlFor="planned_amount">Planned Amount</Label>
+                                                        <Label htmlFor="planned_amount">
+                                                            Planned Amount
+                                                            <span className="text-sm text-gray-500 ml-2">
+                                                                (Required: {selectedElement.required_amount})
+                                                            </span>
+                                                        </Label>
                                                         <Controller
                                                             name="planned_amount"
                                                             control={control}
                                                             render={({ field }) => (
-                                                                <Input
-                                                                    type="number"
-                                                                    {...field}
-                                                                    onChange={(e) => {
-                                                                        const amount = parseInt(e.target.value);
-                                                                        field.onChange(amount);
-                                                                        if (selectedElement) {
-                                                                            const volume = amount * parseFloat(selectedElement.volume);
-                                                                            setValue('planned_volume', volume);
-                                                                        }
-                                                                    }}
-                                                                />
+                                                                <div className="space-y-1">
+                                                                    <Input
+                                                                        type="number"
+                                                                        {...field}
+                                                                        onChange={(e) => {
+                                                                            const amount = parseInt(e.target.value);
+                                                                            field.onChange(amount);
+                                                                            if (selectedElement) {
+                                                                                const volume = amount * parseFloat(selectedElement.volume);
+                                                                                setValue('planned_volume', volume);
+
+                                                                                // Add validation warning
+                                                                                if (amount > selectedElement.required_amount) {
+                                                                                    toast({
+                                                                                        title: "Warning",
+                                                                                        description: `Planned amount exceeds required amount of ${selectedElement.required_amount}`,
+                                                                                        variant: "warning",
+                                                                                    });
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    {field.value > selectedElement.required_amount && (
+                                                                        <p className="text-amber-600 text-sm">
+                                                                            Exceeds required amount by {field.value - selectedElement.required_amount}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         />
                                                     </div>
@@ -844,10 +894,10 @@ const FieldError: React.FC<FieldErrorProps> = ({ error }) => {
     );
 };
 
-const StatusItem: React.FC<StatusItemProps> = ({ label, value }) => (
+const StatusItem: React.FC<StatusItemProps> = ({ label, value, className }) => (
     <div className="space-y-1">
         <Label className="text-emerald-700">{label}</Label>
-        <p className="font-medium">{value}</p>
+        <p className={`font-medium ${className || ''}`}>{value}</p>
     </div>
 );
 
@@ -866,8 +916,9 @@ const PlannedCastingsTable: React.FC<PlannedCastingsTableProps> = ({ plannedCast
                 <TableHeader>
                     <TableRow>
                         <TableHead>Element</TableHead>
+                        <TableHead>Required Amount</TableHead>
+                        <TableHead>Planned Amount</TableHead>
                         <TableHead>Volume (m³)</TableHead>
-                        <TableHead>Amount</TableHead>
                         <TableHead>Date</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -877,8 +928,9 @@ const PlannedCastingsTable: React.FC<PlannedCastingsTableProps> = ({ plannedCast
                         return (
                             <TableRow key={casting.id}>
                                 <TableCell>{element?.element_id}</TableCell>
-                                <TableCell>{casting.planned_volume}</TableCell>
+                                <TableCell>{element?.required_amount || '-'}</TableCell>
                                 <TableCell>{casting.planned_amount}</TableCell>
+                                <TableCell>{casting.planned_volume}</TableCell>
                                 <TableCell>
                                     {new Date(casting.planned_date).toLocaleDateString()}
                                 </TableCell>

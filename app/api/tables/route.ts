@@ -4,15 +4,24 @@ import { queryWithRetry } from '../db'
 
 
 
-// GET all tables
 export async function GET(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
     }
 
+    const searchParams = new URL(request.url).searchParams
+    const projectId = searchParams.get('projectId')
+
+    if (!projectId) {
+        return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
     try {
-        const result = await queryWithRetry('SELECT * FROM Tables')
+        const result = await queryWithRetry(
+            'SELECT * FROM Tables WHERE project_id = $1',
+            [projectId]
+        )
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching tables:', error)
@@ -20,7 +29,6 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST new table
 export async function POST(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
@@ -28,10 +36,15 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { table_number, description } = await request.json()
+        const { table_number, description, project_id } = await request.json()
+
+        if (!project_id) {
+            return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+        }
+
         const result = await queryWithRetry(
-            'INSERT INTO Tables (table_number, Description) VALUES ($1, $2) RETURNING *',
-            [table_number, description]
+            'INSERT INTO Tables (table_number, description, project_id) VALUES ($1, $2, $3) RETURNING *',
+            [table_number, description, project_id]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {

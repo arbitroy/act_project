@@ -11,15 +11,17 @@ interface Job {
     job_number: string;
     description: string;
 }
-
-export default function JobsManagement() {
+interface JobsManagementProps {
+    projectId: string | string[]
+}
+export default function JobsManagement({ projectId }: JobsManagementProps) {
     const [jobs, setJobs] = useState<Job[]>([])
     const [newJob, setNewJob] = useState<Job>({ job_number: '', description: '' })
     const [editingJob, setEditingJob] = useState<Job | null>(null)
 
     const fetchJobs = useCallback(async () => {
         try {
-            const response = await fetch('/api/jobs')
+            const response = await fetch(`/api/jobs?projectId=${projectId}`)
             if (response.ok) {
                 const data = await response.json()
                 setJobs(data)
@@ -31,7 +33,7 @@ export default function JobsManagement() {
             console.error('Error fetching jobs:', error)
 
         }
-    }, [])
+    }, [projectId])
 
     useEffect(() => {
         fetchJobs()
@@ -44,7 +46,10 @@ export default function JobsManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(newJob),
+                body: JSON.stringify({
+                    ...newJob,
+                    project_id: projectId
+                }),
             })
             if (response.ok) {
                 setNewJob({ job_number: '', description: '' })

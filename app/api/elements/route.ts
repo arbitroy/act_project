@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { queryWithRetry } from '../db'
 
 
-// GET all elements
 export async function GET(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
@@ -12,12 +11,17 @@ export async function GET(request: NextRequest) {
 
     const searchParams = new URL(request.url).searchParams
     const includeInactive = searchParams.get('includeInactive') === 'true'
+    const projectId = searchParams.get('projectId')
+
+    if (!projectId) {
+        return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
     
     try {
         const query = includeInactive 
-            ? 'SELECT *, status FROM Elements ORDER BY element_id'
-            : 'SELECT *, status FROM Elements WHERE status = $1 ORDER BY element_id'
-        const params = includeInactive ? [] : ['active']
+            ? 'SELECT *, status FROM Elements WHERE project_id = $1 ORDER BY element_id'
+            : 'SELECT *, status FROM Elements WHERE project_id = $1 AND status = $2 ORDER BY element_id'
+        const params = includeInactive ? [projectId] : [projectId, 'active']
         
         const result = await queryWithRetry(query, params)
         return NextResponse.json(result.rows)
@@ -27,17 +31,21 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST new element
 export async function POST(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
     }
     try {
-        const { element_id, volume, weight } = await request.json()
+        const { element_id, volume, weight, required_amount, project_id } = await request.json()
+        
+        if (!project_id) {
+            return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+        }
+
         const result = await queryWithRetry(
-            'INSERT INTO Elements (element_id, Volume, Weight) VALUES ($1, $2, $3) RETURNING *',
-            [element_id, volume, weight]
+            'INSERT INTO Elements (element_id, volume, weight, required_amount, project_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [element_id, volume, weight, required_amount, project_id]
         )
         return NextResponse.json(result.rows[0], { status: 201 })
     } catch (error) {
@@ -53,10 +61,10 @@ export async function PUT(request: NextRequest) {
         return authResponse
     }
     try {
-        const { element_id, volume, weight } = await request.json()
+        const { element_id, volume, weight, required_amount } = await request.json()
         const result = await queryWithRetry(
-            'UPDATE Elements SET Volume = $2, Weight = $3 WHERE element_id = $1 RETURNING *',
-            [element_id, volume, weight]
+            'UPDATE Elements SET volume = $2, weight = $3, required_amount = $4 WHERE element_id = $1 RETURNING *',
+            [element_id, volume, weight, required_amount]
         )
         if (result.rowCount === 0) {
             return NextResponse.json({ error: 'Element not found' }, { status: 404 })

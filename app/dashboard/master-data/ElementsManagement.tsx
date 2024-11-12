@@ -15,6 +15,7 @@ interface Element {
     volume: string;
     weight: string;
     status: 'active' | 'inactive';
+    required_amount: number;
 }
 
 interface ApiError {
@@ -32,13 +33,17 @@ const isApiError = (error: unknown): error is ApiError => {
 }
 
 const WEIGHT_MULTIPLIER = 2.5;
+interface ElementsManagementProps {
+    projectId: string | string[]
+}
 
-export default function ElementsManagement() {
+export default function ElementsManagement({ projectId }: ElementsManagementProps) {
     const [elements, setElements] = useState<Element[]>([])
-    const [newElement, setNewElement] = useState<Omit<Element, 'status'>>({ 
-        element_id: '', 
-        volume: '0', 
-        weight: '0' 
+    const [newElement, setNewElement] = useState<Omit<Element, 'status'>>({
+        element_id: '',
+        volume: '0',
+        weight: '0',
+        required_amount: 0
     })
     const [editingElement, setEditingElement] = useState<Element | null>(null)
     const [showInactive, setShowInactive] = useState(false)
@@ -53,8 +58,8 @@ export default function ElementsManagement() {
     // Modified setNewElement to include weight calculation
     const handleVolumeChange = (volume: string) => {
         const calculatedWeight = calculateWeight(volume);
-        setNewElement({ 
-            ...newElement, 
+        setNewElement({
+            ...newElement,
             volume: volume,
             weight: calculatedWeight
         });
@@ -75,7 +80,7 @@ export default function ElementsManagement() {
 
     const fetchElements = useCallback(async () => {
         try {
-            const response = await fetch(`/api/elements${showInactive ? '?includeInactive=true' : ''}`)
+            const response = await fetch(`/api/elements?projectId=${projectId}${showInactive ? '&includeInactive=true' : ''}`)
             if (!response.ok) {
                 const error: ApiError = await response.json()
                 throw new Error(error.message || 'Failed to fetch elements')
@@ -83,17 +88,17 @@ export default function ElementsManagement() {
             const data = await response.json()
             setElements(data)
         } catch (error) {
-            const message = error instanceof Error 
-                ? error.message 
+            const message = error instanceof Error
+                ? error.message
                 : 'An unexpected error occurred while fetching elements'
-            
+
             toast({
                 variant: "destructive",
                 title: "Error",
                 description: message,
             })
         }
-    }, [showInactive])
+    }, [projectId, showInactive])
 
     useEffect(() => {
         fetchElements()
@@ -107,26 +112,35 @@ export default function ElementsManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(newElement),
+                body: JSON.stringify({
+                    ...newElement,
+                    project_id: projectId,
+                    required_amount: parseInt(newElement.required_amount.toString(), 10)
+                }),
             })
-            
+
             const data = await response.json()
-            
+
             if (!response.ok) {
                 throw new Error(isApiError(data) ? data.message : 'Failed to create element')
             }
 
-            setNewElement({ element_id: '', volume: '0', weight: '0' })
+            setNewElement({
+                element_id: '',
+                volume: '0',
+                weight: '0',
+                required_amount: 0
+            })
             await fetchElements()
             toast({
                 title: "Success",
                 description: "Element created successfully.",
             })
         } catch (error) {
-            const message = error instanceof Error 
-                ? error.message 
+            const message = error instanceof Error
+                ? error.message
                 : 'An unexpected error occurred while creating the element'
-            
+
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -137,7 +151,7 @@ export default function ElementsManagement() {
 
     const handleUpdate = async () => {
         if (!editingElement) return
-        
+
         try {
             const response = await fetch('/api/elements', {
                 method: 'PUT',
@@ -147,7 +161,8 @@ export default function ElementsManagement() {
                 body: JSON.stringify({
                     element_id: editingElement.element_id,
                     volume: editingElement.volume,
-                    weight: editingElement.weight
+                    weight: editingElement.weight,
+                    required_amount: parseInt(editingElement.required_amount.toString(), 10)
                 }),
             })
 
@@ -164,10 +179,10 @@ export default function ElementsManagement() {
                 description: "Element updated successfully.",
             })
         } catch (error) {
-            const message = error instanceof Error 
-                ? error.message 
+            const message = error instanceof Error
+                ? error.message
                 : 'An unexpected error occurred while updating the element'
-            
+
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -178,7 +193,7 @@ export default function ElementsManagement() {
 
     const handleDelete = async () => {
         if (!elementToDelete) return
-        
+
         try {
             const response = await fetch('/api/elements', {
                 method: 'DELETE',
@@ -187,9 +202,9 @@ export default function ElementsManagement() {
                 },
                 body: JSON.stringify({ element_id: elementToDelete }),
             })
-            
+
             const data = await response.json()
-            
+
             if (!response.ok) {
                 throw new Error(isApiError(data) ? data.message : 'Failed to deactivate element')
             }
@@ -200,10 +215,10 @@ export default function ElementsManagement() {
                 description: "Element deactivated successfully.",
             })
         } catch (error) {
-            const message = error instanceof Error 
-                ? error.message 
+            const message = error instanceof Error
+                ? error.message
                 : 'An unexpected error occurred while deactivating the element'
-            
+
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -223,9 +238,9 @@ export default function ElementsManagement() {
                 },
                 body: JSON.stringify({ element_id: elementId }),
             })
-            
+
             const data = await response.json()
-            
+
             if (!response.ok) {
                 throw new Error(isApiError(data) ? data.message : 'Failed to restore element')
             }
@@ -236,10 +251,10 @@ export default function ElementsManagement() {
                 description: "Element restored successfully.",
             })
         } catch (error) {
-            const message = error instanceof Error 
-                ? error.message 
+            const message = error instanceof Error
+                ? error.message
                 : 'An unexpected error occurred while restoring the element'
-            
+
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -317,9 +332,29 @@ export default function ElementsManagement() {
                         </p>
                     </div>
 
+                    <div className="space-y-2">
+                        <Label htmlFor="required-amount" className="text-sm font-medium text-gray-700">
+                            Required Amount
+                        </Label>
+                        <Input
+                            id="required-amount"
+                            type="number"
+                            value={newElement.required_amount}
+                            onChange={(e) => setNewElement({
+                                ...newElement,
+                                required_amount: parseInt(e.target.value) || 0
+                            })}
+                            className="w-full"
+                            min="0"
+                        />
+                        <p className="text-xs text-gray-500">
+                            Total required pieces for this element
+                        </p>
+                    </div>
+
                     <div className="md:col-span-3 flex justify-end">
-                        <Button 
-                            onClick={handleCreate} 
+                        <Button
+                            onClick={handleCreate}
                             className="bg-green-600 hover:bg-green-700"
                         >
                             Add Element
@@ -335,13 +370,14 @@ export default function ElementsManagement() {
                                 <TableHead className="font-semibold">Element ID</TableHead>
                                 <TableHead className="font-semibold">Volume (m³)</TableHead>
                                 <TableHead className="font-semibold">Weight (T)</TableHead>
+                                <TableHead className="font-semibold">Required Amount</TableHead>
                                 <TableHead className="font-semibold">Status</TableHead>
                                 <TableHead className="font-semibold">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {elements.map((element) => (
-                                <TableRow 
+                                <TableRow
                                     key={element.element_id}
                                     className={element.status === 'inactive' ? 'bg-gray-50' : ''}
                                 >
@@ -383,6 +419,27 @@ export default function ElementsManagement() {
                                         )}
                                     </TableCell>
                                     <TableCell>
+                                        {editingElement?.element_id === element.element_id ? (
+                                            <div className="space-y-1">
+                                                <Label htmlFor={`edit-required-amount-${element.element_id}`} className="sr-only">
+                                                    Required Amount
+                                                </Label>
+                                                <Input
+                                                    id={`edit-required-amount-${element.element_id}`}
+                                                    type="number"
+                                                    value={editingElement.required_amount}
+                                                    onChange={(e) => setEditingElement({
+                                                        ...editingElement,
+                                                        required_amount: parseInt(e.target.value) || 0
+                                                    })}
+                                                    min="0"
+                                                />
+                                            </div>
+                                        ) : (
+                                            element.required_amount
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
                                         <span className={element.status === 'inactive' ? 'text-gray-500' : ''}>
                                             {element.status}
                                         </span>
@@ -392,21 +449,21 @@ export default function ElementsManagement() {
                                             {element.status === 'active' ? (
                                                 <>
                                                     {editingElement?.element_id === element.element_id ? (
-                                                        <Button 
-                                                            onClick={handleUpdate} 
+                                                        <Button
+                                                            onClick={handleUpdate}
                                                             className="bg-green-600 hover:bg-green-700"
                                                         >
                                                             Save
                                                         </Button>
                                                     ) : (
-                                                        <Button 
-                                                            onClick={() => setEditingElement(element)} 
+                                                        <Button
+                                                            onClick={() => setEditingElement(element)}
                                                             className="bg-blue-600 hover:bg-blue-700"
                                                         >
                                                             Edit
                                                         </Button>
                                                     )}
-                                                    <Button 
+                                                    <Button
                                                         className="bg-red-600 hover:bg-red-700"
                                                         onClick={() => setElementToDelete(element.element_id)}
                                                     >
@@ -414,7 +471,7 @@ export default function ElementsManagement() {
                                                     </Button>
                                                 </>
                                             ) : (
-                                                <Button 
+                                                <Button
                                                     className="bg-green-600 hover:bg-green-700"
                                                     onClick={() => handleRestore(element.element_id)}
                                                 >

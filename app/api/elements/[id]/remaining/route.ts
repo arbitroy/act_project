@@ -14,9 +14,9 @@ export async function GET(
 
         const elementId = params.id
 
-        // Fetch the element's total volume
+        // Updated to include required_amount
         const elementQuery = `
-            SELECT volume
+            SELECT volume, required_amount
             FROM elements
             WHERE id = $1
         `
@@ -26,9 +26,9 @@ export async function GET(
             return NextResponse.json({ error: 'Element not found' }, { status: 404 })
         }
 
-        const { volume: totalVolume } = elementResult.rows[0]
+        const { volume: totalVolume, required_amount: totalRequiredAmount } = elementResult.rows[0]
 
-        // Get total planned amount from planned_castings
+        // Rest of the queries remain the same
         const plannedQuery = `
             SELECT 
                 COALESCE(SUM(planned_volume), 0) as total_planned_volume,
@@ -42,7 +42,6 @@ export async function GET(
             total_planned_amount: totalPlannedAmount 
         } = plannedResult.rows[0]
 
-        // Calculate actual castings volume and amount
         const castingsQuery = `
             SELECT 
                 COALESCE(SUM(ac.casted_volume), 0) as total_casted_volume,
@@ -74,6 +73,7 @@ export async function GET(
         return NextResponse.json({
             elementId,
             totalVolume: Number(totalVolume),
+            totalRequiredAmount: Number(totalRequiredAmount), // Added this field
             totalPlannedVolume: Number(totalPlannedVolume),
             totalCastedVolume: Number(totalCastedVolume),
             remainingVolume,

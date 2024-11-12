@@ -14,7 +14,11 @@ interface TableData {
     description: string;
 }
 
-export default function TablesManagement() {
+interface TablesManagementProps {
+    projectId: string | string[]
+}
+
+export default function TablesManagement({ projectId }: TablesManagementProps) {
     const [tables, setTables] = useState<TableData[]>([])
     const [newTable, setNewTable] = useState<TableData>({ table_number: '', description: '' })
     const [editingTable, setEditingTable] = useState<TableData | null>(null)
@@ -23,7 +27,7 @@ export default function TablesManagement() {
 
     const fetchTables = useCallback(async () => {
         try {
-            const response = await fetch('/api/tables')
+            const response = await fetch(`/api/tables?projectId=${projectId}`)
             if (response.ok) {
                 const data = await response.json()
                 setTables(data)
@@ -33,7 +37,7 @@ export default function TablesManagement() {
         } catch (error) {
             console.error('Error fetching tables:', error)
         }
-    }, [])
+    }, [projectId])
 
     useEffect(() => {
         fetchTables()
@@ -46,7 +50,10 @@ export default function TablesManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(newTable),
+                body: JSON.stringify({
+                    ...newTable,
+                    project_id: projectId
+                }),
             })
             if (response.ok) {
                 setNewTable({ table_number: '', description: '' })

@@ -1,0 +1,1 @@
+export type QueryParams = string | number | boolean | null

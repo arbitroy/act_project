@@ -61,7 +61,7 @@ export default function ProjectPage() {
                     <div className="text-center">
                         <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Project</h2>
                         <p className="text-gray-600 mb-4">{error || 'Project not found'}</p>
-                        <Link href="/master-data">
+                        <Link href="/dashboard/master-data">
                             <Button>
                                 <ChevronLeft className="mr-2 h-4 w-4" />
                                 Back to Projects
@@ -77,7 +77,7 @@ export default function ProjectPage() {
         <Layout>
             <div className="bg-white shadow-md rounded-lg p-6">
                 <div className="mb-6">
-                    <Link href="/master-data" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+                    <Link href="/dashboard/master-data" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
                         <ChevronLeft className="mr-1 h-4 w-4" />
                         Back to Projects
                     </Link>

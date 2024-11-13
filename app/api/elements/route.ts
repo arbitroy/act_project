@@ -1,6 +1,7 @@
 import { authMiddleware } from '@/middleware/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { queryWithRetry } from '../db'
+import { QueryParams } from '../types'
 
 
 export async function GET(request: NextRequest) {
@@ -13,16 +14,47 @@ export async function GET(request: NextRequest) {
     const includeInactive = searchParams.get('includeInactive') === 'true'
     const projectId = searchParams.get('projectId')
 
-    if (!projectId) {
-        return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
-    }
-    
     try {
-        const query = includeInactive 
-            ? 'SELECT *, status FROM Elements WHERE project_id = $1 ORDER BY element_id'
-            : 'SELECT *, status FROM Elements WHERE project_id = $1 AND status = $2 ORDER BY element_id'
-        const params = includeInactive ? [projectId] : [projectId, 'active']
-        
+        let query: string
+        let params: QueryParams[] = []
+
+        if (projectId) {
+            // If projectId is provided, get elements for that project
+            query = includeInactive 
+                ? `
+                    SELECT e.*, p.name as project_name 
+                    FROM Elements e
+                    LEFT JOIN projects p ON e.project_id = p.id
+                    WHERE e.project_id = $1
+                    ORDER BY e.element_id
+                `
+                : `
+                    SELECT e.*, p.name as project_name 
+                    FROM Elements e
+                    LEFT JOIN projects p ON e.project_id = p.id
+                    WHERE e.project_id = $1 AND e.status = $2
+                    ORDER BY e.element_id
+                `
+            params = includeInactive ? [projectId] : [projectId, 'active']
+        } else {
+            // If no projectId, get all elements
+            query = includeInactive
+                ? `
+                    SELECT e.*, p.name as project_name 
+                    FROM Elements e
+                    LEFT JOIN projects p ON e.project_id = p.id
+                    ORDER BY e.element_id
+                `
+                : `
+                    SELECT e.*, p.name as project_name 
+                    FROM Elements e
+                    LEFT JOIN projects p ON e.project_id = p.id
+                    WHERE e.status = $1
+                    ORDER BY e.element_id
+                `
+            params = includeInactive ? [] : ['active']
+        }
+
         const result = await queryWithRetry(query, params)
         return NextResponse.json(result.rows)
     } catch (error) {

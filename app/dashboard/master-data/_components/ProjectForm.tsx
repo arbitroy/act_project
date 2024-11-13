@@ -27,7 +27,7 @@ export function ProjectForm() {
 
             if (response.ok) {
                 const data = await response.json()
-                router.push(`/master-data/project/${data.id}`)
+                router.push(`/dashboard/master-data/project/${data.id}`)
             }
         } catch (error) {
             console.error('Error creating project:', error)

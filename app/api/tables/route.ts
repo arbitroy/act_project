@@ -1,10 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { authMiddleware } from '@/middleware/auth'
 import { queryWithRetry } from '../db'
+import { QueryParams } from '../types'
 
 
 
 export async function GET(request: NextRequest) {
+
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
@@ -13,22 +15,37 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams
     const projectId = searchParams.get('projectId')
 
-    if (!projectId) {
-        return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
-    }
-
     try {
-        const result = await queryWithRetry(
-            'SELECT * FROM Tables WHERE project_id = $1',
-            [projectId]
-        )
+        let query: string
+        let params: QueryParams[] = []
+
+        if (projectId) {
+            // If projectId is provided, get tables for that project
+            query = `
+                SELECT t.*, p.name as project_name 
+                FROM Tables t
+                LEFT JOIN projects p ON t.project_id = p.id
+                WHERE t.project_id = $1
+                ORDER BY t.table_number
+            `
+            params = [projectId]
+        } else {
+            // If no projectId, get all tables
+            query = `
+                SELECT t.*, p.name as project_name 
+                FROM Tables t
+                LEFT JOIN projects p ON t.project_id = p.id
+                ORDER BY t.table_number
+            `
+        }
+
+        const result = await queryWithRetry(query, params)
         return NextResponse.json(result.rows)
     } catch (error) {
         console.error('Error fetching tables:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }
-
 export async function POST(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {

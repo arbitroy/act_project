@@ -3,39 +3,56 @@ import { authMiddleware } from '@/middleware/auth'
 import { queryWithRetry } from '../db'
 
 
-export async function GET(
-    request: NextRequest,
-    { params }: {  params: { projectId: string } }
-) {
+export async function GET(request: NextRequest) {
     const authResponse = await authMiddleware(request)
     if (authResponse.status === 401) {
         return authResponse
     }
 
+    // Check if we're querying for a specific project
+    const url = new URL(request.url)
+    const projectId = url.searchParams.get('projectId')
+
     try {
-        const projectId = params.projectId
+        if (projectId) {
+            // Get single project
+            const result = await queryWithRetry(`
+                SELECT 
+                    p.*,
+                    u1.username as created_by_user,
+                    u2.username as updated_by_user
+                FROM projects p
+                LEFT JOIN users u1 ON p.created_by = u1.id
+                LEFT JOIN users u2 ON p.updated_by = u2.id
+                WHERE p.id = $1 AND p.status = 'active'
+            `, [projectId])
 
-        const result = await queryWithRetry(`
-            SELECT 
-                p.*,
-                u1.username as created_by_user,
-                u2.username as updated_by_user
-            FROM projects p
-            LEFT JOIN users u1 ON p.created_by = u1.id
-            LEFT JOIN users u2 ON p.updated_by = u2.id
-            WHERE p.id = $1 AND p.status = 'active'
-        `, [projectId])
+            if (result.rowCount === 0) {
+                return NextResponse.json(
+                    { error: 'Project not found' },
+                    { status: 404 }
+                )
+            }
 
-        if (result.rowCount === 0) {
-            return NextResponse.json(
-                { error: 'Project not found' },
-                { status: 404 }
-            )
+            return NextResponse.json(result.rows[0])
+        } else {
+            // Get all active projects
+            const result = await queryWithRetry(`
+                SELECT 
+                    p.*,
+                    u1.username as created_by_user,
+                    u2.username as updated_by_user
+                FROM projects p
+                LEFT JOIN users u1 ON p.created_by = u1.id
+                LEFT JOIN users u2 ON p.updated_by = u2.id
+                WHERE p.status = 'active'
+                ORDER BY p.created_at DESC
+            `)
+
+            return NextResponse.json({ projects: result.rows })
         }
-
-        return NextResponse.json(result.rows[0])
     } catch (error) {
-        console.error('Error fetching project:', error)
+        console.error('Error fetching project(s):', error)
         return NextResponse.json(
             { error: 'Internal Server Error' },
             { status: 500 }
@@ -69,13 +86,15 @@ export async function POST(request: NextRequest) {
         );
 
         return NextResponse.json(result.rows[0], { status: 201 });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error creating project:', error);
-        if (error.code === '23505') { // Unique violation
-            return NextResponse.json(
-                { error: 'Project number already exists' }, 
-                { status: 400 }
-            );
+        if (typeof error === 'object' && error !== null && 'code' in error) {
+            if (error.code === '23505') { // Unique violation
+                return NextResponse.json(
+                    { error: 'Project number already exists' }, 
+                    { status: 400 }
+                )
+            }
         }
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

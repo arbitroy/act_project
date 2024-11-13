@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer';
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middleware/auth';
 import { ACT_LOGO } from './ACT_LOGO';
@@ -268,16 +269,25 @@ export async function POST(request: NextRequest) {
         return authResponse;
     }
 
+    let browser = null;
+
     try {
         const { reports, date } = await request.json();
         const htmlContent = generateHTML(reports, date);
         const uniqueId = generateUniqueId();
 
-        const browser = await puppeteer.launch({
-            headless: true
+        // Initialize Chrome with the new package
+        browser = await puppeteer.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath(),
+            headless: chromium.headless,
         });
 
         const page = await browser.newPage();
+
+        // Set longer timeout for content loading
+        await page.setDefaultNavigationTimeout(30000);
 
         await page.setContent(htmlContent, {
             waitUntil: ['networkidle0', 'domcontentloaded']
@@ -302,8 +312,6 @@ export async function POST(request: NextRequest) {
             preferCSSPageSize: true
         });
 
-        await browser.close();
-
         return new NextResponse(pdf, {
             status: 200,
             headers: {
@@ -318,5 +326,9 @@ export async function POST(request: NextRequest) {
             { error: 'Failed to generate PDF' },
             { status: 500 }
         );
+    } finally {
+        if (browser !== null) {
+            await browser.close();
+        }
     }
 }

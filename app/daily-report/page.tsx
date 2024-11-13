@@ -214,11 +214,13 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
             planned_volume: data.planned_volume,
             mep: data.mep,
             rft: data.rft,
+            customRftSource: data.rft === 'OTHER' ? data.customRftSource : undefined,
             remarks: data.remarkType === 'CUSTOM'
                 ? data.customRemark || ''
                 : PREDEFINED_REMARKS[data.remarkType],
             original_data: data
         };
+
 
         if (isEditing) {
             setSavedRecords(records =>
@@ -695,22 +697,49 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
                                                     name="rft"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <Select
-                                                            onValueChange={field.onChange}
-                                                            value={field.value}
-                                                        >
-                                                            <SelectTrigger className="border-emerald-200">
-                                                                <SelectValue placeholder="Select RFT Source" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="ACT">ACT</SelectItem>
-                                                                <SelectItem value="HAMDAN">Hamdan</SelectItem>
-                                                                <SelectItem value="OTHER">Other</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="space-y-2">
+                                                            <Select
+                                                                onValueChange={(value) => {
+                                                                    field.onChange(value);
+                                                                    if (value !== 'OTHER') {
+                                                                        setValue('customRftSource', undefined);
+                                                                    }
+                                                                }}
+                                                                value={field.value}
+                                                            >
+                                                                <SelectTrigger className="border-emerald-200">
+                                                                    <SelectValue placeholder="Select RFT Source" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="ACT">ACT</SelectItem>
+                                                                    <SelectItem value="HAMDAN">Hamdan</SelectItem>
+                                                                    <SelectItem value="OTHER">Other</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FieldError error={errors.rft} />
+                                                        </div>
                                                     )}
                                                 />
-                                                <FieldError error={errors.rft} />
+
+                                                {/* Custom RFT Source Input */}
+                                                {watch('rft') === 'OTHER' && (
+                                                    <div className="mt-2">
+                                                        <Controller
+                                                            name="customRftSource"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <div className="space-y-1">
+                                                                    <Input
+                                                                        {...field}
+                                                                        placeholder="Enter custom RFT source..."
+                                                                        className="border-emerald-200"
+                                                                    />
+                                                                    <FieldError error={errors.customRftSource} />
+                                                                </div>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Remarks Section */}

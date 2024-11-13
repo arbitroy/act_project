@@ -5,6 +5,7 @@ export const MEPOption = {
     MEP: 'MEP',
     NO: 'NO'
 } as const;
+
 export const RFTSource = {
     ACT: 'ACT',
     HAMDAN: 'HAMDAN',
@@ -84,14 +85,33 @@ export const dailyReportSchema = z.object({
     planned_amount: z.number().int().min(1, "Amount must be at least 1"),
     mep: z.enum([MEPOption.MEP, MEPOption.NO]),
     rft: z.enum([RFTSource.ACT, RFTSource.HAMDAN, RFTSource.OTHER]),
+    customRftSource: z.string().optional()
+        .refine(
+            (val) => {
+                if (val === undefined) return true;
+                return val.trim().length > 0;
+            },
+            "Custom RFT source is required when 'Other' is selected"
+        ),
     remarkType: z.enum([RemarkType.PLANNED, RemarkType.NOT_DONE, RemarkType.ADVANCED, RemarkType.CUSTOM]),
     customRemark: z.string().optional(),
-});
+}).refine(
+    (data) => {
+        if (data.rft === RFTSource.OTHER) {
+            return !!data.customRftSource?.trim();
+        }
+        return true;
+    },
+    {
+        message: "Custom RFT source is required when 'Other' is selected",
+        path: ["customRftSource"],
+    }
+);
 
 // Form data type derived from schema
 export type DailyReportFormData = z.infer<typeof dailyReportSchema>;
 
-// Record type for table display
+// Update the record type to include customRftSource
 export interface DailyReportRecord {
     id: number;
     job_number: string;
@@ -102,10 +122,10 @@ export interface DailyReportRecord {
     required_amount: number;
     mep: MEPOption;
     rft: RFTSource;
+    customRftSource?: string;
     remarks: string;
     original_data: DailyReportFormData;
 }
-
 
 export interface StatusItemProps {
     label: string;

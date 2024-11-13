@@ -1,24 +1,7 @@
-
+// services/pdfService.ts
 import chromium from '@sparticuz/chromium';
-import type { Browser, PDFOptions, PuppeteerLaunchOptions } from 'puppeteer-core';
+import type { Browser as CoreBrowser, PDFOptions } from 'puppeteer-core';
 import puppeteer from 'puppeteer-core';
-
-
-interface PDFServiceOptions {
-    maxRetries?: number;
-    timeout?: number;
-}
-
-interface PDFGenerationOptions extends PDFOptions {
-    timeout?: number;
-}
-
-type BrowserInstance = Browser | null;
-
-interface PDFGenerationResult {
-    buffer: Buffer;
-    pageCount: number;
-}
 
 class PDFGenerationError extends Error {
     constructor(
@@ -31,9 +14,37 @@ class PDFGenerationError extends Error {
     }
 }
 
+interface PDFServiceOptions {
+    maxRetries?: number;
+    timeout?: number;
+}
+
+interface PDFGenerationOptions extends PDFOptions {
+    timeout?: number;
+}
+
+interface PDFGenerationResult {
+    buffer: Buffer | Uint8Array;
+    pageCount: number;
+}
+
+type BrowserType = CoreBrowser;
+
+// Define launch options interface that works for both puppeteer and puppeteer-core
+interface CommonLaunchOptions {
+    headless?: boolean;
+    args?: string[];
+    defaultViewport?: {
+        width: number;
+        height: number;
+        deviceScaleFactor?: number;
+    } | null;
+    executablePath?: string;
+}
+
 class PDFService {
     private static instance: PDFService;
-    private browserPromise: Promise<BrowserInstance> | null = null;
+    private browserPromise: Promise<BrowserType | null> | null = null;
     private readonly maxRetries: number;
     private readonly timeout: number;
 
@@ -49,46 +60,53 @@ class PDFService {
         return PDFService.instance;
     }
 
-    private async getBrowserLaunchOptions(): Promise<PuppeteerLaunchOptions> {
+    private async getBrowserOptions(): Promise<CommonLaunchOptions> {
         const isDev = process.env.NODE_ENV === 'development';
+
+        const commonArgs = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+        ];
 
         if (isDev) {
             return {
                 headless: true,
-                args: ['--no-sandbox'],
+                args: commonArgs,
             };
         }
 
         return {
             args: [
                 ...chromium.args,
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
+                ...commonArgs,
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
             ],
             defaultViewport: chromium.defaultViewport,
             executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-            ignoreHTTPSErrors: true,
+            headless: true,
         };
     }
 
-    private async initBrowser(): Promise<BrowserInstance> {
+    private async initBrowser(): Promise<BrowserType | null> {
         if (this.browserPromise) {
             return this.browserPromise;
         }
 
         this.browserPromise = (async () => {
             try {
-                const launchOptions = await this.getBrowserLaunchOptions();
+                const launchOptions = await this.getBrowserOptions();
                 
                 if (process.env.NODE_ENV === 'development') {
-                    const puppeteer = (await import('puppeteer')).default;
-                    return await puppeteer.launch(launchOptions);
+                    // Dynamic import of puppeteer for development
+                    const { default: devPuppeteer } = await import('puppeteer');
+                    const browser = await devPuppeteer.launch(launchOptions);
+                    return browser as unknown as BrowserType;
                 }
                 
-                return await puppeteer.launch(launchOptions);
+                // Use puppeteer-core for production
+                const browser = await puppeteer.launch(launchOptions);
+                return browser;
             } catch (error) {
                 this.browserPromise = null;
                 throw new PDFGenerationError(
@@ -118,13 +136,11 @@ class PDFService {
 
                 const page = await browser.newPage();
                 
-                // Set content with timeout
                 await page.setContent(html, {
                     waitUntil: ['networkidle0', 'domcontentloaded'],
                     timeout: options.timeout ?? this.timeout,
                 });
 
-                // Generate PDF
                 const buffer = await page.pdf({
                     format: 'A3',
                     landscape: true,
@@ -139,7 +155,6 @@ class PDFService {
                     ...options,
                 });
 
-                // Get page count (optional)
                 const pageCount = await page.evaluate(() => {
                     const style = window.getComputedStyle(document.documentElement);
                     return Math.ceil(document.documentElement.scrollHeight / 
@@ -156,7 +171,6 @@ class PDFService {
                 lastError = error instanceof Error ? error : new Error('Unknown error occurred');
                 retries++;
                 
-                // Reset browser instance on error
                 if (this.browserPromise) {
                     try {
                         const browser = await this.browserPromise;
@@ -178,7 +192,6 @@ class PDFService {
                     );
                 }
 
-                // Wait before retrying
                 await new Promise(resolve => setTimeout(resolve, 1000 * retries));
             }
         }
@@ -202,16 +215,14 @@ class PDFService {
     }
 }
 
-// Export a type-safe singleton instance
 export const pdfService = PDFService.getInstance({
     maxRetries: 3,
     timeout: 30000,
 });
 
-// Export types for consumers
+export { PDFGenerationError };
 export type {
     PDFGenerationOptions,
     PDFGenerationResult,
     PDFServiceOptions,
-    PDFGenerationError,
 };

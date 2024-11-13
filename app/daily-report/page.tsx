@@ -29,7 +29,9 @@ import {
     RemainingQuantity,
     PlannedCastingsTableProps,
     StatusItemProps,
-    FieldErrorProps
+    FieldErrorProps,
+    RFTSource,
+    isPredefinedRFTSource
 } from './types';
 
 
@@ -213,8 +215,7 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
             planned_amount: data.planned_amount,
             planned_volume: data.planned_volume,
             mep: data.mep,
-            rft: data.rft,
-            customRftSource: data.rft === 'OTHER' ? data.customRftSource : undefined,
+            rft: data.rft, // This will now be either 'ACT', 'HAMDAN', or the custom text
             remarks: data.remarkType === 'CUSTOM'
                 ? data.customRemark || ''
                 : PREDEFINED_REMARKS[data.remarkType],
@@ -697,49 +698,56 @@ const DailyReportForm = ({ userId }: { userId: string | null }) => {
                                                     name="rft"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <div className="space-y-2">
-                                                            <Select
-                                                                onValueChange={(value) => {
-                                                                    field.onChange(value);
-                                                                    if (value !== 'OTHER') {
-                                                                        setValue('customRftSource', undefined);
-                                                                    }
-                                                                }}
-                                                                value={field.value}
-                                                            >
-                                                                <SelectTrigger className="border-emerald-200">
-                                                                    <SelectValue placeholder="Select RFT Source" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="ACT">ACT</SelectItem>
-                                                                    <SelectItem value="HAMDAN">Hamdan</SelectItem>
-                                                                    <SelectItem value="OTHER">Other</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+                                                        <div className="space-y-4">
+                                                            {/* Predefined Options */}
+                                                            <div className="flex gap-4">
+                                                                {Object.entries(RFTSource).map(([key, value]) => (
+                                                                    <div key={key} className="flex items-center space-x-2">
+                                                                        <input
+                                                                            type="radio"
+                                                                            id={`rft-${key.toLowerCase()}`}
+                                                                            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                                                                            checked={field.value === value}
+                                                                            onChange={() => field.onChange(value)}
+                                                                        />
+                                                                        <Label
+                                                                            htmlFor={`rft-${key.toLowerCase()}`}
+                                                                            className="text-sm font-medium text-gray-700 cursor-pointer"
+                                                                        >
+                                                                            {value}
+                                                                        </Label>
+                                                                    </div>
+                                                                ))}
+                                                                <div className="flex items-center space-x-2">
+                                                                    <input
+                                                                        type="radio"
+                                                                        id="rft-other"
+                                                                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500"
+                                                                        checked={!isPredefinedRFTSource(field.value)}
+                                                                        onChange={() => field.onChange('')}
+                                                                    />
+                                                                    <Label
+                                                                        htmlFor="rft-other"
+                                                                        className="text-sm font-medium text-gray-700 cursor-pointer"
+                                                                    >
+                                                                        Other
+                                                                    </Label>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Custom Input */}
+                                                            {!isPredefinedRFTSource(field.value) && (
+                                                                <Input
+                                                                    value={field.value}
+                                                                    onChange={(e) => field.onChange(e.target.value)}
+                                                                    placeholder="Enter RFT source..."
+                                                                    className="border-emerald-200"
+                                                                />
+                                                            )}
                                                             <FieldError error={errors.rft} />
                                                         </div>
                                                     )}
                                                 />
-
-                                                {/* Custom RFT Source Input */}
-                                                {watch('rft') === 'OTHER' && (
-                                                    <div className="mt-2">
-                                                        <Controller
-                                                            name="customRftSource"
-                                                            control={control}
-                                                            render={({ field }) => (
-                                                                <div className="space-y-1">
-                                                                    <Input
-                                                                        {...field}
-                                                                        placeholder="Enter custom RFT source..."
-                                                                        className="border-emerald-200"
-                                                                    />
-                                                                    <FieldError error={errors.customRftSource} />
-                                                                </div>
-                                                            )}
-                                                        />
-                                                    </div>
-                                                )}
                                             </div>
 
                                             {/* Remarks Section */}

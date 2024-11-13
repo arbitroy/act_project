@@ -9,8 +9,7 @@ export const MEPOption = {
 export const RFTSource = {
     ACT: 'ACT',
     HAMDAN: 'HAMDAN',
-    OTHER: 'OTHER'
-} as const;
+} as const; 
 
 export const RemarkType = {
     PLANNED: 'PLANNED',
@@ -24,6 +23,14 @@ export const PREDEFINED_REMARKS = {
     NOT_DONE: 'MOLD ASSEMBLY & RFT FITTING NOT DONE',
     ADVANCED: 'Cast as advanced planned'
 } as const;
+
+// Helper type for the predefined values
+export type PredefinedRFTSource = typeof RFTSource[keyof typeof RFTSource];
+
+// Helper function to check if a value is a predefined RFT source
+export const isPredefinedRFTSource = (value: string): value is PredefinedRFTSource => {
+    return Object.values(RFTSource).includes(value as PredefinedRFTSource);
+};
 
 // Types
 export type MEPOption = typeof MEPOption[keyof typeof MEPOption];
@@ -84,29 +91,11 @@ export const dailyReportSchema = z.object({
     planned_volume: z.number().min(0, "Volume must be positive"),
     planned_amount: z.number().int().min(1, "Amount must be at least 1"),
     mep: z.enum([MEPOption.MEP, MEPOption.NO]),
-    rft: z.enum([RFTSource.ACT, RFTSource.HAMDAN, RFTSource.OTHER]),
-    customRftSource: z.string().optional()
-        .refine(
-            (val) => {
-                if (val === undefined) return true;
-                return val.trim().length > 0;
-            },
-            "Custom RFT source is required when 'Other' is selected"
-        ),
+    rft: z.string().min(1, "RFT source is required"),
     remarkType: z.enum([RemarkType.PLANNED, RemarkType.NOT_DONE, RemarkType.ADVANCED, RemarkType.CUSTOM]),
     customRemark: z.string().optional(),
-}).refine(
-    (data) => {
-        if (data.rft === RFTSource.OTHER) {
-            return !!data.customRftSource?.trim();
-        }
-        return true;
-    },
-    {
-        message: "Custom RFT source is required when 'Other' is selected",
-        path: ["customRftSource"],
-    }
-);
+});
+
 
 // Form data type derived from schema
 export type DailyReportFormData = z.infer<typeof dailyReportSchema>;
@@ -121,7 +110,7 @@ export interface DailyReportRecord {
     planned_volume: number;
     required_amount: number;
     mep: MEPOption;
-    rft: RFTSource;
+    rft: string;
     customRftSource?: string;
     remarks: string;
     original_data: DailyReportFormData;

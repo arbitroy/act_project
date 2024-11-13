@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { Plus, Search, AlertCircle, FileSpreadsheet, Filter, Calendar } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { randomBytes } from 'crypto'
 
 
 interface DailyReport {
@@ -144,6 +145,13 @@ export default function DailyReportListView() {
         }
     }
 
+
+    const generateUniqueId = () => {
+        // Generate a 4-character hex string
+        return randomBytes(2).toString('hex');
+    };
+
+    
     const handleExportToPDF = async () => {
         try {
             // First fetch the data
@@ -156,6 +164,8 @@ export default function DailyReportListView() {
             if (!dataResponse.ok) throw new Error('Failed to fetch data');
 
             const data = await dataResponse.json();
+
+            const uniqueId = generateUniqueId();
 
             // Then send the data to PDF generation endpoint
             const response = await fetch('/api/generate-pdf', {
@@ -180,7 +190,7 @@ export default function DailyReportListView() {
             // Create a temporary link and click it to download
             const a = document.createElement('a');
             a.href = downloadUrl;
-            a.download = `daily-report-${filterDate}.pdf`;
+            a.download = `daily-report-${filterDate}-${uniqueId}.pdf`;
             document.body.appendChild(a);
             a.click();
 

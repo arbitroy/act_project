@@ -3,7 +3,6 @@ import puppeteer from 'puppeteer-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middleware/auth';
 import { ACT_LOGO } from './ACT_LOGO';
-import { randomBytes } from 'crypto';
 
 
 interface DailyReport {
@@ -258,10 +257,7 @@ const generateHTML = (dailyReports: DailyReport[], date: string) => {
     `;
 };
 
-const generateUniqueId = () => {
-    // Generate a 4-character hex string
-    return randomBytes(2).toString('hex');
-};
+
 
 export async function POST(request: NextRequest) {
     const authResponse = await authMiddleware(request);
@@ -274,7 +270,6 @@ export async function POST(request: NextRequest) {
     try {
         const { reports, date } = await request.json();
         const htmlContent = generateHTML(reports, date);
-        const uniqueId = generateUniqueId();
 
         // Initialize Chrome with the new package
         browser = await puppeteer.launch({
@@ -316,7 +311,7 @@ export async function POST(request: NextRequest) {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="daily-report-${date}-${uniqueId}.pdf"`
+                'Content-Disposition': `attachment; filename="daily-report-${date}.pdf"`
             }
         });
 

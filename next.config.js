@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
     webpack: (config, { isServer }) => {
         if (isServer) {
             config.externals.push('@sparticuz/chromium')
@@ -7,4 +7,5 @@ module.exports = {
         return config
     },
 }
-export default nextConfig;
+
+module.exports = nextConfig

@@ -65,8 +65,8 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
-    "puppeteer": "^latest",
-    "@types/puppeteer": "^latest",
-    "@types/puppeteer-core": "^latest"
+    "puppeteer": "23.8.0",
+    "@types/puppeteer": "7.0.4",
+    "@types/puppeteer-core": "7.0.4"
   }
 }

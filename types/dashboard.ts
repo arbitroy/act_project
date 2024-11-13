@@ -15,10 +15,23 @@ export interface MonthlyProgressData {
     actual: number;
 }
 
+export interface DailyCastingAmountData {
+    date: string;
+    amount: number;
+}
+
+export interface DailyCastingVolumeData {
+    date: string;
+    volume: number;
+    cumulativeVolume: number;
+}
+
 export interface DashboardData {
     dailyCastingData: DailyCastingData[];
     elementCompletionData: ElementCompletionData[];
     monthlyProgressData: MonthlyProgressData[];
+    dailyCastingAmountData: DailyCastingAmountData[];
+    dailyCastingVolumeData: DailyCastingVolumeData[];
 }
 
 export interface ChartColors {

@@ -4,18 +4,18 @@ import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { 
-    Bar, 
-    BarChart, 
-    Cell, 
-    Legend, 
-    Pie, 
-    PieChart, 
-    ResponsiveContainer, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    LineChart, 
+import {
+    Bar,
+    BarChart,
+    Cell,
+    Legend,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    LineChart,
     Line
 } from "recharts"
 import React, { useState, useEffect } from 'react'
@@ -51,10 +51,23 @@ interface MonthlyProgressEntry {
     actual: number;
 }
 
+interface DailyCastingAmount {
+    date: string;
+    amount: number;
+}
+
+interface DailyCastingVolume {
+    date: string;
+    volume: number;
+    cumulativeVolume: number;
+}
+
 interface DashboardData {
     dailyCastingData: DailyCastingEntry[];
     elementCompletionData: ElementCompletionEntry[];
     monthlyProgressData: MonthlyProgressEntry[];
+    dailyCastingAmountData: DailyCastingAmount[];
+    dailyCastingVolumeData: DailyCastingVolume[];
 }
 
 
@@ -122,8 +135,8 @@ export default function ManagerDashboard() {
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                        dataKey="date" 
+                    <XAxis
+                        dataKey="date"
                         stroke="#000000"
                         tickFormatter={(value: string) => new Date(value).toLocaleDateString()}
                     />
@@ -149,20 +162,118 @@ export default function ManagerDashboard() {
                         outerRadius={80}
                         dataKey="value"
                         nameKey="status"
-                        label={({ name, percent }: { name?: string; percent?: number }) => 
+                        label={({ name, percent }: { name?: string; percent?: number }) =>
                             `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`
                         }
                     >
                         {data.map((_, index) => (
-                            <Cell 
-                                key={`cell-${index}`} 
-                                fill={COLORS[index % COLORS.length]} 
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
                             />
                         ))}
                     </Pie>
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
                 </PieChart>
+            </ResponsiveContainer>
+        </ChartContainer>
+    )
+
+    const renderDailyCastingAmountBarChart = (data: DailyCastingAmount[]) => (
+        <ChartContainer className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                        dataKey="date"
+                        stroke="#000000"
+                        tickFormatter={(value: string) => new Date(value).toLocaleDateString()}
+                    />
+                    <YAxis stroke="#000000" />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="amount" fill={colors.primary} name="Daily Casting Amount" />
+                </BarChart>
+            </ResponsiveContainer>
+        </ChartContainer>
+    )
+
+    const renderDailyCastingVolumeBarChart = (data: DailyCastingVolume[]) => {
+        // Calculate cumulative amounts for the bar chart
+        const cumulativeData = data.map((entry, index) => ({
+            ...entry,
+            cumulativeVolume: data.slice(0, index + 1).reduce((sum, item) => sum + item.volume, 0)
+        }))
+
+        return (
+            <ChartContainer className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={cumulativeData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                            dataKey="date"
+                            stroke="#000000"
+                            tickFormatter={(value: string) => new Date(value).toLocaleDateString()}
+                        />
+                        <YAxis stroke="#000000" />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="cumulativeVolume" fill={colors.secondary} name="Cumulative Volume" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </ChartContainer>
+        )
+    }
+
+    const renderDailyCastingAmountLineChart = (data: DailyCastingAmount[]) => {
+        // Calculate cumulative amounts for the line chart
+        const cumulativeData = data.map((entry, index) => ({
+            ...entry,
+            cumulativeAmount: data.slice(0, index + 1).reduce((sum, item) => sum + item.amount, 0)
+        }))
+
+        return (
+            <ChartContainer className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={cumulativeData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                            dataKey="date"
+                            tickFormatter={(value: string) => new Date(value).toLocaleDateString()}
+                        />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line
+                            type="monotone"
+                            dataKey="cumulativeAmount"
+                            stroke={colors.primary}
+                            name="Cumulative Amount"
+                            activeDot={{ r: 8 }}
+                        />
+                    </LineChart>
+                </ResponsiveContainer>
+            </ChartContainer>
+        )
+    }
+
+    const renderDailyCastingVolumeLineChart = (data: DailyCastingVolume[]) => (
+        <ChartContainer className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                        dataKey="date"
+                        tickFormatter={(value: string) => new Date(value).toLocaleDateString()}
+                    />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line
+                        type="monotone"
+                        dataKey="cumulativeVolume"
+                        stroke={colors.secondary}
+                        name="Cumulative Volume"
+                        activeDot={{ r: 8 }}
+                    />
+                </LineChart>
             </ResponsiveContainer>
         </ChartContainer>
     )
@@ -176,17 +287,17 @@ export default function ManagerDashboard() {
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Line 
-                        type="monotone" 
-                        dataKey="planned" 
-                        stroke={colors.primary} 
-                        activeDot={{ r: 8 }} 
+                    <Line
+                        type="monotone"
+                        dataKey="planned"
+                        stroke={colors.primary}
+                        activeDot={{ r: 8 }}
                     />
-                    <Line 
-                        type="monotone" 
-                        dataKey="actual" 
-                        stroke={colors.secondary} 
-                        activeDot={{ r: 8 }} 
+                    <Line
+                        type="monotone"
+                        dataKey="actual"
+                        stroke={colors.secondary}
+                        activeDot={{ r: 8 }}
                     />
                 </LineChart>
             </ResponsiveContainer>
@@ -283,7 +394,7 @@ export default function ManagerDashboard() {
                                         <p className="text-sm text-gray-600">Total Elements</p>
                                         <p className="text-2xl font-bold text-black">
                                             {dashboardData.elementCompletionData.reduce(
-                                                (acc, curr) => acc + curr.value, 
+                                                (acc, curr) => acc + curr.value,
                                                 0
                                             )}
                                         </p>
@@ -297,6 +408,34 @@ export default function ManagerDashboard() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <ChartCard
+                            title="Number of Panels Cast"
+                            description="Daily panels casting by day"
+                        >
+                            {renderDailyCastingAmountBarChart(dashboardData.dailyCastingAmountData)}
+                        </ChartCard>
+
+                        <ChartCard
+                            title="Cumulative Panels Casting"
+                            description="Total accumulated panels casting over time"
+                        >
+                            {renderDailyCastingAmountLineChart(dashboardData.dailyCastingAmountData)}
+                        </ChartCard>
+
+                        <ChartCard
+                            title="Total Concrete Cast"
+                            description="Total accumulated concrete casting over time"
+                        >
+                            {renderDailyCastingVolumeBarChart(dashboardData.dailyCastingVolumeData)}
+                        </ChartCard>
+
+                        <ChartCard
+                            title="Cumulative Concrete Cast Trend"
+                            description="Trend of total accumulated concrete casting"
+                        >
+                            {renderDailyCastingVolumeLineChart(dashboardData.dailyCastingVolumeData)}
+                        </ChartCard>
                     </div>
                 </div>
             </div>

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Fetch daily casting data
+        // Existing queries remain the same
         const dailyCastingQuery = `
             SELECT 
                 date,
@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
         `
         const dailyCastingResult = await queryWithRetry(dailyCastingQuery)
 
-        // Fetch element completion status
         const elementCompletionQuery = `
             SELECT 
                 CASE 
@@ -39,7 +38,6 @@ export async function GET(request: NextRequest) {
         `
         const elementCompletionResult = await queryWithRetry(elementCompletionQuery)
 
-        // Fetch monthly progress data
         const monthlyProgressQuery = `
             SELECT 
                 TO_CHAR(date_trunc('month', dr.date), 'Mon') as month,
@@ -53,6 +51,41 @@ export async function GET(request: NextRequest) {
             LIMIT 6
         `
         const monthlyProgressResult = await queryWithRetry(monthlyProgressQuery)
+
+        // Query for daily casting amounts
+        const dailyCastingAmountQuery = `
+            SELECT 
+                dr.date,
+                SUM(ac.casted_amount) as amount
+            FROM dailyreports dr
+            JOIN actualcastings ac ON dr.id = ac.daily_report_id
+            WHERE ac.casted_amount > 0
+            GROUP BY dr.date
+            ORDER BY dr.date ASC
+            LIMIT 30
+        `
+        const dailyCastingAmountResult = await queryWithRetry(dailyCastingAmountQuery)
+
+        // Query for cumulative casting volumes
+        const cumulativeCastingVolumeQuery = `
+            WITH daily_volumes AS (
+                SELECT 
+                    dr.date,
+                    SUM(ac.casted_volume) as daily_volume
+                FROM dailyreports dr
+                JOIN actualcastings ac ON dr.id = ac.daily_report_id
+                WHERE ac.casted_volume > 0
+                GROUP BY dr.date
+                ORDER BY dr.date ASC
+            )
+            SELECT 
+                date,
+                daily_volume as volume,
+                SUM(daily_volume) OVER (ORDER BY date) as cumulative_volume
+            FROM daily_volumes
+            LIMIT 30
+        `
+        const cumulativeCastingVolumeResult = await queryWithRetry(cumulativeCastingVolumeQuery)
 
         const dashboardData: DashboardData = {
             dailyCastingData: dailyCastingResult.rows.map(row => ({
@@ -68,6 +101,15 @@ export async function GET(request: NextRequest) {
                 month: row.month,
                 planned: Number(row.planned) || 0,
                 actual: Number(row.actual) || 0,
+            })),
+            dailyCastingAmountData: dailyCastingAmountResult.rows.map(row => ({
+                date: row.date,
+                amount: Number(row.amount) || 0,
+            })),
+            dailyCastingVolumeData: cumulativeCastingVolumeResult.rows.map(row => ({
+                date: row.date,
+                volume: Number(row.volume) || 0,
+                cumulativeVolume: Number(row.cumulative_volume) || 0,
             })),
         }
 

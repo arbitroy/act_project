@@ -208,6 +208,12 @@ const generateTableHTML = (dailyReports: DailyReport[]) => {
 
 
 const generateHTML = (dailyReports: DailyReport[], date: string) => {
+    const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
     return `
         <!DOCTYPE html>
         <html>
@@ -223,12 +229,17 @@ const generateHTML = (dailyReports: DailyReport[], date: string) => {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-                    .bg-green-600 { background-color: #059669 !important; }
+                    /* Updated to a darker green */
+                    .bg-green-600 { background-color: #166534 !important; }
+                    .border-green-400 { border-color: #166534 !important; }
+                    .border-green-600 { border-color: #166534 !important; }
+                    .border-green-200 { border-color: #166534 !important; }
+                    .border-green-300 { border-color: #166534 !important; }
+                    
                     .bg-lime-100 { background-color: #30f230 !important; }
                     .bg-blue-100 { background-color: #5DE2E7 !important; }
                     .bg-rose-50 { background-color: #cfa5af !important; }
                     
-                    /* Add any additional styles needed */
                     .logo-container img {
                         width: 48px;
                         height: 48px;
@@ -247,7 +258,17 @@ const generateHTML = (dailyReports: DailyReport[], date: string) => {
                                 <h2 class="text-base">Daily Production Report</h2>
                             </div>
                         </div>
-                        <!-- Rest of the header content -->
+                        <div class="grid grid-cols-3 gap-4 mt-2 text-sm">
+                            <div>
+                                <p><span class="font-semibold">Issued By:</span> TECH DEPARTMENT</p>
+                            </div>
+                            <div class="text-center">
+                                <p><span class="font-semibold">Location:</span> ACT FACTORY - DIC</p>
+                            </div>
+                            <div class="text-right">
+                                <p><span class="font-semibold">Date Issued:</span> ${currentDate}</p>
+                            </div>
+                        </div>
                     </div>
                     ${generateTableHTML(dailyReports)}
                 </div>

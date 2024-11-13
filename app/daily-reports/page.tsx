@@ -219,25 +219,29 @@ export default function DailyReportListView() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id: reportId, status: newStatus }),
-            })
-
+                body: JSON.stringify({ 
+                    id: reportId, 
+                    status: newStatus,
+                    // Don't include rft in the payload when only updating status
+                }),
+            });
+    
             if (response.ok) {
                 toast({
                     title: "Success",
                     description: "Report status updated successfully",
-                })
-                fetchDailyReports()
+                });
+                fetchDailyReports();
             } else {
-                throw new Error('Failed to update report status')
+                throw new Error('Failed to update report status');
             }
         } catch (error) {
-            console.error('Error updating report status:', error)
+            console.error('Error updating report status:', error);
             toast({
                 title: "Error",
                 description: "Failed to update report status",
                 variant: "destructive",
-            })
+            });
         }
     }
 

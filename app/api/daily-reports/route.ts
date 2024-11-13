@@ -162,28 +162,35 @@ export async function POST(request: NextRequest) {
     }
 }
 
+
 export async function PUT(request: NextRequest) {
-    const authResponse = await authMiddleware(request)
+    const authResponse = await authMiddleware(request);
     if (authResponse.status === 401) {
-        return authResponse
+        return authResponse;
     }
 
-    const { id, status, rft } = await request.json()
+    const { id, status, rft } = await request.json();
 
     try {
-        const result = await queryWithRetry(
-            'UPDATE dailyreports SET status = $1, rft = $2 WHERE id = $3 RETURNING *',
-            [status, rft, id]
-        )
+        // Only update the status if rft is not provided
+        const query = rft !== undefined 
+            ? 'UPDATE dailyreports SET status = $1, rft = $2 WHERE id = $3 RETURNING *'
+            : 'UPDATE dailyreports SET status = $1 WHERE id = $2 RETURNING *';
+        
+        const params = rft !== undefined 
+            ? [status, rft, id]
+            : [status, id];
+
+        const result = await queryWithRetry(query, params);
 
         if (result.rowCount === 0) {
-            return NextResponse.json({ error: 'Daily report not found' }, { status: 404 })
+            return NextResponse.json({ error: 'Daily report not found' }, { status: 404 });
         }
 
-        return NextResponse.json(result.rows[0])
+        return NextResponse.json(result.rows[0]);
     } catch (error) {
-        console.error('Error updating daily report:', error)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        console.error('Error updating daily report:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 

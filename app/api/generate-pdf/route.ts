@@ -1,8 +1,7 @@
-import chromium from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middleware/auth';
 import { ACT_LOGO } from './ACT_LOGO';
+import { PDFGenerationError, pdfService } from './pdfService';
 
 
 interface DailyReport {
@@ -265,49 +264,15 @@ export async function POST(request: NextRequest) {
         return authResponse;
     }
 
-    let browser = null;
-
     try {
         const { reports, date } = await request.json();
         const htmlContent = generateHTML(reports, date);
 
-        // Initialize Chrome with the new package
-        browser = await puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
+        const { buffer: pdfBuffer } = await pdfService.generatePDF(htmlContent, {
+            timeout: 60000, // 60 seconds
         });
 
-        const page = await browser.newPage();
-
-        // Set longer timeout for content loading
-        await page.setDefaultNavigationTimeout(30000);
-
-        await page.setContent(htmlContent, {
-            waitUntil: ['networkidle0', 'domcontentloaded']
-        });
-
-        await page.setViewport({
-            width: 1920,
-            height: 1080,
-            deviceScaleFactor: 2
-        });
-
-        const pdf = await page.pdf({
-            format: 'A3',
-            landscape: true,
-            printBackground: true,
-            margin: {
-                top: '10mm',
-                bottom: '10mm',
-                left: '10mm',
-                right: '10mm'
-            },
-            preferCSSPageSize: true
-        });
-
-        return new NextResponse(pdf, {
+        return new NextResponse(pdfBuffer, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
@@ -316,14 +281,19 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Error generating PDF:', error);
+        console.error('Error in PDF generation:', error);
+        
+        if (error instanceof PDFGenerationError) {
+            return NextResponse.json({
+                error: error.message,
+                context: error.context,
+                cause: error.cause?.message
+            }, { status: 500 });
+        }
+
         return NextResponse.json(
             { error: 'Failed to generate PDF' },
             { status: 500 }
         );
-    } finally {
-        if (browser !== null) {
-            await browser.close();
-        }
     }
 }

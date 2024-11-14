@@ -48,7 +48,7 @@ const SelectContent = React.forwardRef<
                 className={cn(
                     "p-1",
                     position === "popper" &&
-                    "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+                    "max-h-[280px] w-full min-w-[var(--radix-select-trigger-width)] overflow-y-auto"
                 )}
             >
                 {children}
@@ -56,6 +56,7 @@ const SelectContent = React.forwardRef<
         </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
 ))
+
 SelectContent.displayName = SelectPrimitive.Content.displayName
 
 const SelectLabel = React.forwardRef<
